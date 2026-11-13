@@ -1,0 +1,35 @@
+---
+title: 🛜 Lobfile
+id: lobfile
+---
+
+import Highlight from '@site/src/components/Highlight';
+import Details from '@site/src/components/Details';
+
+<Highlight color="#1877F2">**用户友好**</Highlight><Highlight color="#10ae28ff">**免费**</Highlight>
+
+Lobfile 配置简单，适合初次接触资源包托管的用户。它在大多数地区都能稳定使用，但在中国大陆等网络受限地区可能无法正常访问。
+
+<Details summary="获取 API 密钥">
+1. 访问 [Lobfile](https://lobfile.com/) 并注册账号。
+2. 依次点击 `Account` → `Settings`。
+3. 点击 <Highlight color="#1877F2">**Copy API Key to Clipboard**</Highlight>。
+
+</Details>
+
+```yaml
+resource-pack:
+  packs:
+    default:
+      default: true
+      type: "lobfile"
+      api_key: "abcdefghijkl"
+      # 可选
+      use_environment_variables: false # 是否使用环境变量提供机密信息，默认为 false
+```
+
+填写参数后执行 `/ce reload host`，上传和发送见[工作流](../workflows)。
+
+<Details summary="可用环境变量">
+  - CE_LOBFILE_API_KEY
+</Details>

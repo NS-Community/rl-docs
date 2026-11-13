@@ -1,0 +1,167 @@
+---
+title: 🗡️ 物品
+id: item
+---
+
+import UrlCard from '@site/src/components/UrlCard';
+
+## 概述
+
+每个自定义物品都是 `items:` 下的一个条目，并使用 `namespace:path` 作为唯一 ID（如 `default:topaz_sword`）。物品由若干**彼此独立的配置段**组成，可以按需添加。省略 `material` 时会使用 `config.yml` 中的默认值；如果条目本身使用原版物品 ID，则会忽略 `material`。
+
+## 结构
+
+每个物品都遵循同一套骨架。每个顶层键回答一个问题：
+
+```yaml
+items:
+  default:my_item:            # 物品 ID，其他地方都用 default:my_item 引用
+    material: paper           # 可选  → 基于哪个原版物品（默认值见 config.yml）
+    data:                     # 可选  → 携带什么数据组件（名称、描述、附魔……）
+      ...
+    model:                    # 可选  → 长什么样
+      ...
+    behavior:                 # 可选  → 交互行为（放置方块、放置家具……）
+      ...
+    settings:                 # 可选  → 插件驱动的特性（燃料、标签、可修复、可附魔……）
+      ...
+    events:                   # 可选  → 对事件的响应
+      ...
+```
+
+除了以上配置段，物品上还有几个**根级字段**：`custom_model_data`、`item_model`、`hand_animation_on_swap`、`oversized_in_gui`、`swap_animation_scale`。原版物品 ID 还可以使用 `override_data` 修改默认数据。详见[物品模型 → 根字段](./item/models.mdx#根字段)与[物品数据 → 覆写原版物品数据](./item/data.mdx#-覆写原版物品数据1205)。
+
+## 配置段
+
+<div style={{display: 'flex', flexWrap: 'wrap', margin: '-10px -10px 0 -10px'}}>
+
+<UrlCard
+  url="item/data"
+  title="🔢 物品数据"
+  subtitle="名称、描述、附魔、属性、食物、耐久——物品携带的数据组件"
+/>
+
+<UrlCard
+  url="item/models"
+  title="🟰 物品模型"
+  subtitle="模型类型树、简化纹理、着色、旧版覆盖——物品长什么样"
+/>
+
+<UrlCard
+  url="item/behaviors"
+  title="🕹️ 物品行为"
+  subtitle="物品能干什么——放方块、放家具、范围挖掘、堆肥……"
+/>
+
+<UrlCard
+  url="item/settings"
+  title="🔧 物品设置"
+  subtitle="燃料时间、标签、可修复、可附魔、可染色——插件驱动的物品属性"
+/>
+
+<UrlCard
+  url="../reference/events"
+  title="🪇 事件"
+  subtitle="响应点击、消耗、攻击等操作，配合条件触发函数"
+/>
+
+<UrlCard
+  url="item/updater"
+  title="🔄 物品更新器"
+  subtitle="版本化物品迁移——配置变更时自动更新已有物品"
+/>
+
+</div>
+
+## 快速上手
+
+### 1. 最简物品
+
+最简单的物品只需指定一张贴图。省略 `material` 时会使用 `config.yml` 中的默认值：
+
+```yaml
+items:
+  default:ruby:
+    material: paper
+    texture: minecraft:item/custom/ruby
+```
+
+### 2. 添加名称和手持模型
+
+通过 `data` 设置显示名称，并选择工具类 `material`，即可获得对应的 3D 手持效果：
+
+```yaml
+items:
+  default:ruby_sword:
+    material: golden_sword
+    texture: minecraft:item/custom/ruby_sword
+    data:
+      item_name: "<!i><#FF8C00>Ruby Sword"
+      lore:
+        - "Forged in the depths"
+```
+
+### 3. 让它能放置方块
+
+添加 `behavior` 后，玩家便可右键放置对应的自定义方块：
+
+```yaml
+items:
+  default:ruby_sword:
+    material: golden_sword
+    texture: minecraft:item/custom/ruby_sword
+    data:
+      item_name: "<!i><#FF8C00>Ruby Sword"
+    behavior:
+      type: block_item
+      block: default:ruby_block
+```
+
+### 4. 完整配置模型、属性和设置
+
+需要精确控制时，可以用完整模型定义替代简化的 `texture`，并添加战斗属性和工具标签：
+
+```yaml
+items:
+  default:ruby_sword:
+    material: golden_sword
+    custom_model_data: 10001
+    data:
+      item_name: "<!i><#FF8C00>Ruby Sword"
+      attribute_modifiers:
+        - type: attack_damage
+          amount: 7
+          operation: add_value
+          slot: mainhand
+    model:
+      type: minecraft:model
+      path: minecraft:item/custom/ruby_sword
+      generation:
+        parent: minecraft:item/handheld
+        textures:
+          layer0: minecraft:item/custom/ruby_sword
+    settings:
+      tags:
+        - minecraft:swords
+    behavior:
+      type: block_item
+      block: default:ruby_block
+```
+
+## 按目标查找配置
+
+| 目标 | 参考页面 |
+|---|---|
+| 设置物品名称、描述、附魔 | [物品数据](./item/data.mdx) |
+| 做成食物 | [物品数据 → food](./item/data.mdx#food食物--1205) |
+| 修改原版物品类型的默认数据 | [物品数据 → 覆写原版物品数据](./item/data.mdx#-覆写原版物品数据1205) |
+| 创建简单的 2D 或手持模型 | [物品模型 → 简化模型](./item/models.mdx#简化模型) |
+| 做弓、弩、钓鱼竿模型 | [物品模型 → 简化模型](./item/models.mdx#简化模型) |
+| 构建复杂的模型映射 | [物品模型 → 模型类型](./item/models.mdx#模型类型) |
+| 添加着色（染色盔甲、草色、药水……） | [模型 → Tints](./item/models/model.mdx#tints) |
+| 让物品放置方块 | [方块物品](./item/behaviors/block_item.mdx) |
+| 让物品放置家具 | [家具物品](./item/behaviors/furniture_item.mdx) |
+| 设置耐久度 | [物品数据 → max_damage](./item/data.mdx#max_damage最大耐久--1205) |
+| 响应事件（食用、攻击、点击） | [事件](../reference/events.mdx) |
+| 配置更新后迁移已有物品 | [物品更新器](./item/updater.mdx) |
+| 将展示数据保存在客户端（付费版） | [物品数据 → 客户端绑定数据](./item/data.mdx#-客户端绑定数据) |

@@ -1,0 +1,293 @@
+---
+title: 🖼️ 图片
+id: image
+---
+
+import PluginFileTree from '@site/src/components/PluginFileTree';
+
+## 快速入门
+
+图片系统会将 PNG 映射为字体字符，使其能够出现在各种文本中。最简配置分为两步：
+
+**第一步**：在任意包的 `configuration/` 目录中创建图片配置：
+
+```yaml
+images:
+  my_pack:star:
+    height: 10
+    ascent: 9
+    font: my_pack:ui
+    file: my_pack:font/ui/star.png
+```
+
+**第二步**：在物品名称中引用图片：
+
+```yaml
+items:
+  my_pack:star_sword:
+    material: diamond_sword
+    data:
+      item_name: "<!i><white><image:my_pack:star> 星剑"
+```
+
+`<image:命名空间:id>` 标签会在文本中插入图片对应的字符。该字符绑定到指定字体，因此 Minecraft 渲染文本时会显示为图片。
+
+---
+
+接下来将分别介绍如何配置图片、在不同场景中使用图片，以及组合多张图片来构建复杂的 UI。
+
+## 图片配置
+
+### 基本字段
+
+图片配置写在任意包的 `images:` 节点下，每张图片以 `命名空间:id` 作为唯一标识。
+
+```yaml
+images:
+  internal:item_browser:
+    height: 140        # 每个字形的高度（像素）。别名：scale, scale_ratio
+    ascent: 18         # 相对于文本基线的垂直偏移。别名：y_position
+    font: minecraft:internal
+    file: minecraft:font/gui/custom/item_browser.png
+    char: '\ub000'     # 可选。别名：chars, unicode
+```
+
+| 字段 | 是否必填 | 说明 |
+|-------|----------|------|
+| file | **是** | PNG 文件路径。`.png` 后缀会自动补全。 |
+| height | 自动检测 | 每个字形的高度。不填则自动读取 PNG 实际高度。 |
+| ascent | 默认 `height - 1` | 基线偏移量。增大该值会让图片在屏幕上往上移。 |
+| font | 默认 `命名空间:default` | 图片所属的字体。 |
+| char | 自动分配 | 映射到此图片的码位。 |
+
+:::caution
+- `height` 必须 **≥** `ascent`，这是 Minecraft 的硬性限制。
+- 单个字形不得超过 **256×256** 像素。注意：这里指的是精灵图中的每一个格子，不是整张 PNG。
+:::
+
+### 字符的几种写法
+
+不填 `char` 时，插件会自动挑选一个空闲码位——**推荐这样做**，完全没有冲突风险。
+
+如果需要手动指定：
+
+```yaml
+# 固定码位
+char: '\ub000'
+
+# 数字形式
+char: 1000
+
+# 直接写字
+char: '我'
+```
+
+### 垂直定位
+
+`ascent` 控制字形相对于文本基线的位置。值越大，图片越靠上。
+
+如果图片需要继续上移，但 `ascent` 已等于 `height`，无法再增加（受 `ascent ≤ height` 规则限制），可以在 PNG 图片**底部**增加透明像素。这样既能增大 `height`，也能为 `ascent` 留出更多调整空间。
+
+## 精灵图
+
+当一张 PNG 里排列了多个图标（像精灵图那样），用 `chars` 逐行定义：
+
+```yaml
+images:
+  default:icons:
+    height: 10
+    ascent: 9
+    font: minecraft:icons
+    file: minecraft:font/image/icons.png
+    chars:
+     - '\ub000\ub001\ub002'   # 第 0 行
+     - '\ub003\ub004\ub005'   # 第 1 行
+```
+
+每行是一个字符串，行内字符从左到右依次对应格子。所有行的字符数必须一致。
+
+### 用 grid_size 自动排列
+
+如果不想手动分配字符，可以使用 `grid_size` 让插件自动处理：
+
+```yaml
+images:
+  default:icons:
+    height: 10
+    ascent: 9
+    font: minecraft:icons
+    file: minecraft:font/image/icons.png
+    grid_size: 2,3   # 2 行 × 3 列 → 共 6 格
+```
+
+## 引用单个格子
+
+给精灵图中的某个格子起一个有意义的名字：
+
+```yaml
+images:
+  # 短格式
+  default:angry:
+    ref: default:emojis:0:1
+
+  # 长格式
+  default:sad:
+    ref: default:emojis
+    row: 0
+    column: 2
+```
+
+引用不需要 `file`、`height` 或 `font`——它只是指向已有位图的某个格子。
+
+## 使用图片
+
+### MiniMessage 标签
+
+物品名称、Lore、聊天消息、GUI 标题——所有解析 MiniMessage 的地方都能用：
+
+```
+<image:命名空间:id>
+<image:命名空间:id:行>
+<image:命名空间:id:行:列>
+<image:命名空间:id:行:列:格式>
+```
+
+```yaml
+# 第一个格子
+item_name: "<!i><white><image:default:icons> 黄玉钓竿"
+
+# 指定格子
+item_name: "<!i><white><image:default:icons:0:1> 黄玉钓竿"
+
+# 为字形添加格式
+item_name: "<!i><red><image:default:icons:0:1:'<!shadow><white>'> 黄玉钓竿"
+```
+
+可选的 `format` 参数会在图片字符前添加 MiniMessage 样式，通常用于消除阴影或调整颜色。
+
+### 预览调试
+
+```
+/ce debug image <命名空间:id> [行] [列]
+```
+
+执行后会输出三个可直接点击复制的按钮：
+- **MiniMessage**：`<font:命名空间:字体名>字符</font>`
+- **MineDown**：`[字符](font=命名空间:字体名)`
+- **RAW JSON**：`{"text":"字符","font":"命名空间:字体名"}`
+
+### 包级标签
+
+对于本身不支持 MiniMessage 的插件，CraftEngine 可以在网络包层面拦截并替换 `<image:命名空间:id>` 标签。详见下方[兼容性](#兼容性)一节，并在 `config.yml` → `network.intercept-packets` 中启用需要的通道。
+
+## 用 Image 与 Shift 搭建 UI
+
+`<shift>` 和 `<image>` 是构建自定义游戏界面的两块积木。`<shift:N>` 插入一个字符，其字形宽度让后续文本产生 `N` 像素的水平位移（负值左移，正值右移）。
+
+把它们串联起来就能组合出各种布局：
+
+```yaml
+title: "<white><shift:-11><image:internal:cooking_recipe><shift:-136><image:internal:blasting>"
+```
+
+逐个拆解：
+1. `<shift:-11>` — 左移 11 像素，让整体居中
+2. `<image:internal:cooking_recipe>` — 第一个图标
+3. `<shift:-136>` — 再次左移，为第二个图标腾位置
+4. `<image:internal:blasting>` — 第二个图标紧挨在右边
+
+每个 shift 值都对应一张预先调整好 `height` 和 `ascent` 的图片，用于产生精确的像素位移：
+
+```yaml
+# config.yml
+image:
+  offset-characters:
+    enable: true
+    font: minecraft:default
+    -1: ''
+    1: ''
+    # ... 范围覆盖 -256 到 +256
+```
+
+:::warning
+除非你完全理解 Minecraft 字形度量机制，否则不要修改 `offset-characters`。错误的值会破坏文本布局。
+:::
+
+## 配置参考
+
+`config.yml` 中的 `image` 部分：
+
+```yaml
+image:
+  # 阻止玩家直接输入原始码位字符
+  illegal-characters-filter:
+    anvil: true
+    book: true
+    chat: true
+    command: true
+    sign: true
+
+  # 自动分配码位的起始值，可按字体分别设置
+  codepoint-starting-value:
+    default: 19968
+    overrides:
+      minecraft:default: 57344
+```
+
+:::info
+
+**该用什么字体？** 除了 `minecraft:default` 以外的自定义字体天然安全——玩家只能在 `minecraft:default` 字体下输入字符，无法直接打出属于其他字体的字形。
+
+仅在必要场景（如原版语言文件）使用 `minecraft:default`，此时务必保持 `illegal-characters-filter` 开启。
+:::
+
+## 兼容性
+
+### PlaceholderAPI
+
+```
+%image_mm_命名空间:id[:行:列]%   # MiniMessage 格式
+%image_md_命名空间:id[:行:列]%   # MineDown 格式
+%image_raw_命名空间:id[:行:列]%  # 原始字符
+```
+
+完整列表见 [PlaceholderAPI 兼容页](../compatibility/placeholderapi.mdx)。
+
+### 包拦截
+
+对于不支持 MiniMessage 的插件，CraftEngine 可以在网络包层面拦截并替换标签。根据需要开启对应通道：
+
+```yaml
+network:
+  intercept-packets:
+    system-chat: true
+    actionbar: true
+    title: true
+    bossbar: true
+    container: true
+    item: true
+    # ... 等等
+```
+
+:::tip
+每个拦截器都会给 Netty 线程增加负担。关闭不需要的通道可以优化 Netty 性能。
+:::
+
+## 语言文件
+
+原版语言文件（`assets/minecraft/lang/*.json`）始终使用 `minecraft:default` 渲染，因此其中的图片必须使用该字体：
+
+```yaml
+images:
+  test:custom_ui:
+    height: 140
+    ascent: 18
+    font: minecraft:default
+    file: minecraft:font/gui/custom/gui.png
+```
+
+```yaml
+langs:
+  en_us:
+    container.custom_furnace: "<image:test:custom_ui>"
+```

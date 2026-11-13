@@ -1,0 +1,696 @@
+---
+title: 🍳 Recipe
+id: recipe
+---
+
+import Highlight from '@site/src/components/Highlight';
+import MinecraftRecipe, {MinecraftRecipeRow, MinecraftBrewingRecipe} from '@site/src/components/MinecraftRecipe';
+import McSprite from '@site/src/components/McSprite';
+import {recipeItems as items, recipeBookRecipes} from '@site/src/components/minecraftRecipeItems';
+import MinecraftRecipeBook from '@site/src/components/MinecraftRecipeBook';
+
+## Preparation
+
+Here's what you need to understand before setting up new recipes. These tips will make configuration easier and reveal extra helpful functionality.
+
+### Tag
+
+CraftEngine allows you to use tags, and you can also create custom tags. To use a tag, simply follow this format: `#namespace:tag` .
+
+:::tip
+
+Most crafting plugins share a common pain point—they do not support assigning tags to items, nor do they allow the use of tags in recipes. For example, if you want newly created plank types to be mixed and used with vanilla planks in crafting recipes, it’s simply impossible to achieve
+
+:::
+
+In the following example, I have added two vanilla tags to `palm_planks`, allowing them to participate in all recipes within data packs that contain these two tags.
+
+```yaml
+items:
+  default:palm_planks:
+    material: paper
+    settings:
+      fuel_time: 300
+      tags:
+        - "minecraft:planks"
+        - "minecraft:wooden_tool_materials"
+    data:
+      item_name: "<!i>Palm Planks"
+```
+
+<MinecraftRecipeRow>
+<MinecraftRecipe
+  pattern={['PPP', 'P O', 'POO']}
+  ingredients={{
+    P: {...items.palmPlanks, tags: ['minecraft:planks']},
+    O: {...items.oakPlanks, tags: ['minecraft:planks']},
+  }}
+  result={items.chest}
+  caption={<code>#minecraft:planks</code>}
+/>
+
+<MinecraftRecipe
+  pattern={['PPO', ' S ', ' S ']}
+  ingredients={{
+    P: {...items.palmPlanks, tags: ['minecraft:wooden_tool_materials']},
+    O: {...items.oakPlanks, tags: ['minecraft:wooden_tool_materials']},
+    S: items.stick,
+  }}
+  result={items.woodenPickaxe}
+  caption={<code>#minecraft:wooden_tool_materials</code>}
+/>
+</MinecraftRecipeRow>
+
+### Predicate
+
+Predicates allow you to require additional conditions on ingredients beyond just their item ID or tag. This is useful when you want a recipe to only accept items with specific enchantments or data components.
+
+```yaml
+recipes:
+  default:sharpness_upgrade:
+    type: shapeless_transform
+    ingredients:
+      - items: minecraft:diamond_sword
+        source: true
+      - items: minecraft:paper
+        predicate:
+          - type: enchantment
+            enchantments:
+              minecraft:sharpness: 5
+    result:
+      id: default:topaz_sword
+      count: 1
+```
+
+<MinecraftRecipe
+  pattern={['SP ', '   ', '   ']}
+  ingredients={{
+    S: items.diamondSword,
+    P: {...items.paper, enchanted: true, lore: [{text: 'Requires Sharpness V', color: '#ffaa00'}]},
+  }}
+  result={items.topazSword}
+/>
+
+Available predicate types:
+
+```yaml
+# Check enchantments
+- type: enchantment
+  enchantments:
+    minecraft:sharpness: 5
+
+# Exact data component match (advanced)
+- type: exact
+  component: minecraft:custom_name
+  value: ... # NBT tag value
+```
+
+:::tip[Get the exact component value]
+
+Hold the source item and run [`/ce debug item-component [component] [json/snbt]`](../reference/commands.mdx#debug-item-component). Click the result to copy it, then paste the complete `(json) ...` or `(snbt) ...` string into `value`. Keep the format prefix.
+
+:::
+
+### Group / Category
+
+```yaml
+recipes:
+  default:palm_planks:
+    type: shapeless
+    category: building
+    group: planks
+    ingredients:
+      A: "#default:palm_logs"
+    result:
+      id: default:palm_planks
+      count: 4
+```
+
+The `group` determines which group this recipe belongs to after it is unlocked on the client side. The `group` can be any name you choose freely. However, please avoid using illegal characters.
+
+Recipes with the same `group` in the same category share a recipe slot, which cycles through their results. The Palm Planks and Oak Planks below both belong to `planks`. Left-click to select the currently displayed recipe, or right-click to expand the ingredient layouts and choose a recipe to preview. On a touchscreen, tap to expand. With the recipe slot focused, press ↓ to expand or Esc to close.
+
+<MinecraftRecipeBook recipes={recipeBookRecipes} initialCategory="building" label="Recipe grouping example" />
+
+The `category` determines which tab this recipe is located in within the recipe book. The `category` type is limited.
+
+Click the tabs on the left to browse building blocks, equipment, miscellaneous items, and redstone recipes. Selecting a recipe shows its `category` and `group` below the preview.
+
+<MinecraftRecipeBook recipes={recipeBookRecipes} label="Recipe category example" />
+
+* For cooking-type recipes, the options are `food`, `blocks`, and `misc`.
+* For crafting-type recipes, the options are `building`, `redstone`, `equipment`, and `misc`.
+
+### Compatibility with Other Plugins
+
+First, add the supported plugins to this list in `config.yml`:
+
+```yaml
+recipe:
+  ingredient-sources:
+    - MythicMobs
+```
+
+:::info
+Supported item sources can be found on [📦️ External Item Sources](../compatibility/external_item_sources.mdx). You can also register your own item source through API.
+:::
+
+Next, you must map each external item source to its CraftEngine equivalent. See the example configuration below for reference:
+
+```yaml
+items: 
+  mythicmobs:kingscrown:
+    material: golden_helmet
+    data:
+      external:
+        plugin: MythicMobs
+        id: KingsCrown
+    settings:
+      tags:
+        - add_tag:if_you_want
+```
+
+After that, simply create recipes for this item just like you would with any regular item.
+
+```yaml
+recipes:
+  default:bench:
+    type: shaped
+    pattern:
+      - A A
+      - A A
+    ingredients:
+      A: mythicmobs:kingscrown
+    result:
+      id: default:bench
+      count: 1
+```
+
+:::caution
+
+For any items used as ingredients, you have to make sure their namespace in CraftEngine is the plugin name in **lowercase**, and the ID should also be in **lowercase**. Let me give you a few examples so you can see how this works:
+
+* Item named 'MySword' in MythicMobs  ->  `mythicmobs:mysword`
+* Item named 'star\_fish' in CustomFishing -> `customfishing:star_fish`
+* Item named 'MAGIC\_GEM' with 'MATERIAL' type in MMOItems -> `mmoitems:material_magic_gem`
+* Item with namespaced id in a RANDOM plugin -> `random_plugin:namespace_id`
+
+:::
+
+### Result Post Processor
+
+The **Result Post Processor** is a concept introduced to address recipe diversification needs. For example, if you want to craft a pickaxe but wish the output to have enchantments, it would be impractical to create a separate recipe for the enchanted item.
+
+```yaml
+result:
+  id: default:topaz_pickaxe
+  count: 1
+  post_processors:
+    - type: apply_data
+      data:
+        enchantment:
+          minecraft:efficiency: 5
+```
+
+:::info
+So far, there's only the apply_data type of post-processor. But you can register new ones using the API.
+:::
+
+### Transform Processors
+
+Transform processors are used by transform recipes (`smithing_transform`, `shaped_transform` and `shapeless_transform`) to control how the source item's data is merged into the result.
+
+```yaml
+transform_processors:
+  # Apply data to the combined item
+  - type: apply_data
+    data: 
+      item_name: "new name"
+
+  # Merge the enchantments of the final product and the original item, rather than choosing one of them.
+  - type: merge_enchantments
+
+  # Keep the specific data of the custom_data component (1.20.5+)
+  - type: keep_custom_data
+    paths:
+      - weapon
+      - energy.fly
+
+  # Keep the specified components (1.20.5+)
+  - type: keep_components
+    components:
+      - minecraft:enchantments
+
+  # Keep the specified nbt tags (1.20-1.20.4)
+  - type: keep_tags
+    tags:
+      - display.Name
+      - CustomModelData
+```
+
+### Visual Result
+
+<Highlight color="#f2184eff">**Premium Exclusive**</Highlight>
+
+The visual-result feature prevents players from directly anticipating the outcome of **crafting/smithing** recipes. This is particularly useful for recipes involving randomized items.
+
+```yaml
+result:
+  id: default:topaz_sword
+  count: 1
+visual_result:
+  id: default:topaz_sword
+  count: 1
+  post_processors:
+    - type: apply_data
+      data:
+        remove_components:
+          - attribute_modifiers
+        lore:
+          - "<gray>Attack Damage 1~3"
+          - "<gray>Attack Speed 1~2"
+```
+
+### Functions
+
+<Highlight color="#f2184eff">**Premium Exclusive**</Highlight>
+
+Functions can be used to run specific functions when an item is successfully crafted/smithed.
+
+```yaml
+recipes:
+  default:bench:
+    functions:
+      - type: command
+        command: say 1
+```
+
+### Conditions
+
+<Highlight color="#f2184eff">**Premium Exclusive**</Highlight>
+
+Conditions allow you to set requirements for this recipe, preventing players who do not meet them from using it.
+
+```yaml
+recipes:
+  default:bench:
+    conditions:
+      - type: permission
+        permission: recipe.unlock.bench
+```
+
+### Recipe Unlock
+
+#### Auto Unlock
+
+If the player has all the ingredients for a recipe and meets its conditions, the recipe will be automatically unlocked for the player. The default value of this option can be set in `config.yml`.
+
+```yaml
+recipes:
+  default:amethyst_torch:
+    unlock_on_ingredient_obtained: true
+```
+
+#### Unlock on Join
+
+When set to `true`, the recipe is automatically unlocked for the player when they join the server, regardless of whether they have obtained the ingredients.
+
+```yaml
+recipes:
+  default:amethyst_torch:
+    unlock_on_join: true
+```
+
+You can also control this behavior globally in `config.yml`:
+
+```yaml
+recipe:
+  unlock-on-join:
+    all: false   # whether to unlock all recipes on join
+    list:        # additional recipe ids to unlock on join
+      - default:amethyst_torch
+```
+
+## Recipe Types
+
+:::caution
+
+**Important Notice:**
+
+After reloading the **datapacks**, please reload the recipes, otherwise the registered recipes will become invalid.
+
+:::
+
+### Shaped Crafting Recipe
+
+```yaml
+recipes:
+  default:topaz_shovel:
+    type: shaped
+    pattern:
+      - "A"
+      - "B"
+      - "B"
+    ingredients:
+      A: "default:topaz"
+      B: "minecraft:stick"
+    result:
+      id: default:topaz_shovel
+      count: 1
+```
+
+<MinecraftRecipe
+  pattern={[' T ', ' S ', ' S ']}
+  ingredients={{T: items.topaz, S: items.stick}}
+  result={items.topazShovel}
+/>
+
+```yaml
+recipes:
+  default:chinese_lantern:
+    type: shaped
+    pattern:
+      - "ABA"
+      - "BCB"
+      - "ABA"
+    ingredients:
+      A: "#minecraft:planks"
+      B: "minecraft:stick"
+      C: "minecraft:torch"
+    result:
+      id: default:chinese_lantern
+      count: 1
+```
+
+<MinecraftRecipe
+  pattern={['PSO', 'STS', 'OSP']}
+  ingredients={{
+    P: {...items.palmPlanks, tags: ['minecraft:planks']},
+    O: {...items.oakPlanks, tags: ['minecraft:planks']},
+    S: items.stick,
+    T: items.torch,
+  }}
+  result={items.chineseLantern}
+/>
+
+```yaml
+recipes:
+  default:enchanted_cobblestone:
+    type: shaped
+    pattern:
+      - " A "
+      - "AAA"
+      - " A "
+    ingredients:
+      A: 
+        items: "minecraft:cobblestone"
+        count: 32
+    result:
+      id: default:enchanted_cobblestone
+      count: 1
+```
+
+<MinecraftRecipe
+  pattern={[' C ', 'CCC', ' C ']}
+  ingredients={{C: {...items.cobblestone, count: 32}}}
+  result={items.enchantedCobblestone}
+/>
+
+### Shaped Transform Recipe
+
+```yaml
+default:topaz_crossbow_transform:
+  type: shaped_transform
+  pattern:
+    - 'BBB'
+    - 'B  '
+    - 'A  '
+  ingredients:
+    A:
+      item: minecraft:crossbow
+      source: true  # Mark as the source item
+    B: default:topaz
+  result:
+    id: default:topaz_crossbow
+    count: 1
+  transform_processors:
+    - type: keep_components
+      components:
+        - enchantments
+```
+
+<MinecraftRecipe
+  pattern={['TTT', 'T  ', 'C  ']}
+  ingredients={{
+    T: items.topaz,
+    C: {...items.crossbow, enchanted: true},
+  }}
+  result={{...items.topazCrossbow, enchanted: true, lore: [{text: 'Keeps the source item’s enchantments', color: '#ffaa00'}]}}
+/>
+
+### Shapeless Crafting Recipe
+
+```yaml
+recipes:
+  default:palm_planks:
+    type: shapeless
+    category: building
+    group: planks
+    ingredients:
+      - "#default:palm_logs"
+      # nested list is also supported
+      - - test:ingredient1
+        - test:ingredient2
+    result:
+      id: default:palm_planks
+      count: 4
+```
+
+<MinecraftRecipeRow>
+<MinecraftRecipe
+  pattern={['LX ', '   ', '   ']}
+  ingredients={{
+    L: {...items.palmLog, tags: ['default:palm_logs']},
+    X: {icon: 'paper', name: 'Test Ingredient 1', id: 'test:ingredient1', lore: [{text: 'Illustrative icon', color: '#ffaa00'}]},
+  }}
+  result={{...items.palmPlanks, count: 4}}
+  caption="Ingredient choice 1"
+/>
+<MinecraftRecipe
+  pattern={['   ', ' X ', '  L']}
+  ingredients={{
+    L: {...items.strippedPalmLog, tags: ['default:palm_logs']},
+    X: {icon: 'paper', name: 'Test Ingredient 2', id: 'test:ingredient2', lore: [{text: 'Illustrative icon', color: '#ffaa00'}]},
+  }}
+  result={{...items.palmPlanks, count: 4}}
+  caption="Ingredient choice 2"
+/>
+</MinecraftRecipeRow>
+
+Ingredients can go in any slot. Choose either item from the nested list for the second ingredient; the paper icons stand in for the test items.
+
+```yaml
+recipes:
+  default:enchanted_cobblestone:
+    type: shapeless
+    ingredients:
+      - items: "minecraft:cobblestone"
+        count: 32
+      - items: "minecraft:cobblestone"
+        count: 32
+      - items: "minecraft:cobblestone"
+        count: 32
+      - items: "minecraft:cobblestone"
+        count: 32
+      - items: "minecraft:cobblestone"
+        count: 32
+    result:
+      id: default:enchanted_cobblestone
+      count: 1
+```
+
+<MinecraftRecipe
+  pattern={['CCC', 'CC ', '   ']}
+  ingredients={{C: {...items.cobblestone, count: 32}}}
+  result={items.enchantedCobblestone}
+/>
+
+### Shapeless Transform Recipe
+
+Shapeless transform recipe works like the shapeless crafting recipe, but one ingredient must be marked as `source: true`. The source item's data will be merged into the final result, making it ideal for upgrading existing items.
+
+```yaml
+recipes:
+  default:topaz_sword_transform:
+    type: shapeless_transform
+    ingredients:
+      - items: minecraft:diamond_sword
+        source: true  # Mark as the source item
+      - default:topaz
+    # merge the source item's components into the result
+    merge_components: true # default: true
+    result:
+      id: default:topaz_sword
+      count: 1
+    transform_processors:
+      - type: keep_components
+        components:
+          - enchantments
+```
+
+<MinecraftRecipe
+  pattern={['ST ', '   ', '   ']}
+  ingredients={{
+    S: items.diamondSword,
+    T: items.topaz,
+  }}
+  result={{...items.topazSword, lore: [{text: 'Keeps the source item’s enchantments', color: '#ffaa00'}]}}
+/>
+
+### Cooking Recipe
+
+Cooking Recipe includes `smelting`, `blasting`, `smoking`, and `campfire_cooking`. Regardless of the type, the configuration format remains the same.
+
+```yaml
+recipes:
+  default:topaz_from_smelting_topaz_ore:
+    type: smelting
+    experience: 1.0
+    category: misc
+    group: topaz
+    time: 200
+    ingredient: "default:topaz_ore"
+    result:
+      id: default:topaz
+      count: 1
+  default:topaz_from_smelting_deepslate_topaz_ore:
+    type: smelting
+    experience: 1.0
+    category: misc
+    group: topaz
+    time: 200
+    ingredient: "default:deepslate_topaz_ore"
+    result:
+      id: default:topaz
+      count: 1
+```
+
+<MinecraftRecipeRow>
+<MinecraftRecipe
+  type="furnace"
+  pattern={['OF']}
+  ingredients={{O: items.topazOre, F: items.blazeRod}}
+  result={items.topaz}
+  caption="Topaz Ore · 200 ticks · 1.0 XP"
+>
+  <McSprite name="furnace/lit_progress" x={56} y={36} width={14} height={14} />
+  <McSprite name="furnace/burn_progress" x={79} y={34} width={24} height={16} />
+</MinecraftRecipe>
+<MinecraftRecipe
+  type="furnace"
+  pattern={['OF']}
+  ingredients={{O: items.deepslateTopazOre, F: items.blazeRod}}
+  result={items.topaz}
+  caption="Deepslate Topaz Ore · 200 ticks · 1.0 XP"
+>
+  <McSprite name="furnace/lit_progress" x={56} y={36} width={14} height={14} />
+  <McSprite name="furnace/burn_progress" x={79} y={34} width={24} height={16} />
+</MinecraftRecipe>
+</MinecraftRecipeRow>
+
+### Stone Cutting Recipe
+
+```yaml
+recipes:
+  default:stonecutting_example:
+    type: stonecutting
+    group: topaz
+    ingredient: "minecraft:stone"
+    result:
+      id: default:topaz
+      count: 1
+```
+
+:::warning
+
+Stone Cutting Recipe is a somewhat unique recipe type. I do not recommend using custom items as ingredients, as this is highly likely to cause significant client-side visual issues.
+
+:::
+
+<MinecraftRecipe
+  type="stonecutter"
+  pattern={['ST']}
+  ingredients={{S: items.stone, T: items.topaz}}
+  result={items.topaz}
+/>
+
+### Smithing Transform Recipe
+
+```yaml
+default:topaz_bow:
+  type: smithing_transform
+  template_type: default:topaz # slot 1 (Optional)
+  base: minecraft:bow # slot 2 (Required)
+  addition: default:topaz # slot 3 (Optional)
+  # merge two items' components like what vanilla does
+  merge_components: true # default: true
+  result:
+    id: default:topaz_bow
+    count: 1
+    post_processors: [] # see the result post processor above
+  transform_processors: []
+```
+
+<MinecraftRecipe
+  type="smithing"
+  pattern={['TBT']}
+  ingredients={{T: items.topaz, B: items.bow}}
+  result={items.topazBow}
+/>
+
+### Smithing Trim Recipe
+
+```yaml
+default:bolt_tool_trims:
+  type: smithing_trim
+  template_type: "minecraft:bolt_armor_trim_smithing_template"
+  base: "#minecraft:trimmable_tool"
+  addition: "#minecraft:trim_materials"
+  pattern: minecraft:bolt # required on 1.21.5+
+```
+
+<MinecraftRecipe
+  type="smithing"
+  pattern={['TPG']}
+  ingredients={{
+    T: items.boltTemplate,
+    P: {...items.topazPickaxe, tags: ['minecraft:trimmable_tool']},
+    G: {...items.goldIngot, tags: ['minecraft:trim_materials']},
+  }}
+  result={{...items.topazPickaxe, lore: [{text: 'Bolt Armor Trim', color: '#ffaa00'}, {text: 'Material: Gold', color: '#ffaa00'}]}}
+/>
+
+### Brewing Recipe
+
+<Highlight color="#0dda4aff">**1.20.2+**</Highlight>
+
+Brewing configuration also accepts the data pack key names: `reagent` for `ingredient`/`ingredients`, `input` for `container`, and `output` for `result`. Values use the same CraftEngine configuration format. If both names are present, the existing key takes precedence.
+
+On Minecraft 26.3 and newer, brewing recipes use the same native registration and reload flow as crafting recipes. Vanilla and data pack brewing recipes are also injected: item tags and ingredient substitutes can include custom items, while potion types, potion tags, effect predicates, and output components are preserved. On Paper 1.20.2–26.2, brewing recipes continue to use the legacy PotionMix registration.
+
+```yaml
+tea_art:tea:
+  type: brewing
+  ingredient: tea_art:tea_leaf
+  container: tea_art:cup
+  result:
+    id: tea_art:cup_of_tea
+    count: 1
+```
+<MinecraftBrewingRecipe
+  ingredient={{icon: 'oak_leaves', name: 'Tea Leaves', id: 'tea_art:tea_leaf'}}
+  container={{icon: 'glass_bottle', name: 'Tea Cup', id: 'tea_art:cup'}}
+  result={{icon: 'water_bottle', name: 'Cup of Tea', id: 'tea_art:cup_of_tea'}}
+/>
+
+Vanilla leaves, glass bottles, and water bottles represent the tea leaves, tea cup, and brewed tea here. Their actual appearance depends on your resource pack.

@@ -1,0 +1,186 @@
+---
+title: 😀 表情
+id: emoji
+---
+
+:::caution
+
+表情依赖图片配置，请先阅读[🖼️ 图片](./image.mdx)。
+:::
+
+## 快速入门
+
+表情由关键词触发。玩家输入关键词后，CraftEngine 会将其替换为指定的图片和文本。最简配置分为两步：
+
+**第一步**：创建底层图片（推荐使用精灵图）：
+
+```yaml
+images:
+  default:emojis:
+    height: 11
+    ascent: 9
+    font: minecraft:default
+    file: minecraft:font/image/emojis.png
+    grid_size: 4,4
+```
+
+**第二步**：定义表情，并指向精灵图中的对应格子：
+
+```yaml
+emoji:
+  default:smiley:
+    image: default:emojis:0:0
+    content: "<!shadow><white><arg:emoji></white></!shadow>"
+    keywords:
+      - ':smiley:'
+      - ':)'
+```
+
+现在玩家在聊天中输入 `:)`，它就会被替换成表情图片加上你定义的内容。
+
+---
+
+接下来的内容逐一展开：怎么自定义内容、怎么按场景切换显示、怎么用模板批量管理、以及兼容性注意事项。
+
+## 表情配置
+
+表情配置写在任意包的 `emoji:` 节点下，每个表情以 `命名空间:id` 作为唯一标识。
+
+```yaml
+emoji:
+  default:time:
+    image: default:icons:0:0
+    content: "<white><arg:emoji></white>"
+    keywords:
+      - ':time:'
+    permission: emoji.vip           # 可选。使用该表情需要的权限
+    chat_completion: true           # 可选。是否出现在客户端补全提示中（默认开启）
+```
+
+| 字段 | 是否必填 | 说明 |
+|-------|----------|------|
+| keywords | **是** | 一个或多个触发词。玩家输入任意一个即被替换。 |
+| content | **是** | 替换关键词的 MiniMessage 文本。 |
+| image | 否 | 指向图片中某个格子的引用，格式为 `命名空间:id:行:列`。单格图片直接写 `命名空间:id` 即可。 |
+| permission | 否 | 使用该表情所需的权限节点。 |
+| chat_completion | 否 | 关键词是否出现在客户端 Tab 补全提示中。默认 `true`。 |
+
+## 内容格式
+
+### arg:emoji 与 arg:keyword 参数
+
+表情内容中有两个特殊参数可用：
+
+- `<arg:emoji>` — 表情的图片字形（由 `image` 字段解析而来）
+- `<arg:keyword>` — 触发该表情的第一个关键词
+
+```yaml
+emoji:
+  default:time:
+    image: default:icons:0:0
+    content: "<hover:show_text:'输入 <yellow><arg:keyword></yellow> 使用此表情'><white><arg:emoji></white></hover>"
+    keywords:
+      - ':time:'
+```
+
+### 在内容中使用 MiniMessage
+
+内容完全兼容 MiniMessage——你可以使用颜色、悬浮文字、点击事件、PAPI 占位符、数学表达式，甚至嵌套 `<image>` 标签：
+
+```yaml
+emoji:
+  default:location:
+    permission: emoji.location
+    image: default:icons:0:0
+    content: "<hover:show_text:'使用 <yellow>\"<arg:keyword>\"</yellow> 分享你的坐标'><!shadow><white><arg:emoji></white></!shadow><bold> <papi:player_x>, <papi:player_y>, <papi:player_z></bold></hover>"
+    keywords:
+      - ':pos:'
+```
+
+复杂内容可以拆成多行——插件会自动拼接：
+
+```yaml
+content:
+  - <hover:show_text:'使用 <yellow>"<arg:keyword>"</yellow>'>
+  - <!shadow><white><arg:emoji></white></!shadow>
+  - "<bold>坐标：<papi:player_x>, <papi:player_y></bold>"
+  - </hover>
+```
+
+### 按场景切换内容
+
+不同场景（聊天、书、铁砧、告示牌、指令）可能需要不同的显示效果，用 `content_overrides` 分别指定：
+
+```yaml
+emoji:
+  default:time:
+    image: default:icons:0:0
+    content: "<!shadow><white><arg:emoji></white></!shadow>"
+    keywords:
+      - ':time:'
+    content_overrides:
+      chat: "<hover:show_text:'<l10n:emoji.tip:\"<arg:keyword>\":\"<arg:emoji>\">'><!shadow><white><arg:emoji></white></!shadow></hover>"
+      book: "<hover:show_text:'<arg:keyword>'><!shadow><white><arg:emoji></white></!shadow></hover>"
+      anvil: "<!i><!shadow><white><arg:emoji></white></!shadow></!i>"
+```
+
+某个场景没有 override 时，会使用默认的 `content`。
+
+## 模板
+
+当大量表情共享相同的结构时，用模板避免重复：
+
+```yaml
+# 定义模板（只写一次）
+templates:
+  default:emoji/basic:
+    content: "<!shadow><white><arg:emoji></white></!shadow>"
+    content_overrides:
+      chat: "<hover:show_text:'<l10n:emoji.tip:\"<arg:keyword>\":\"<arg:emoji>\">'><!shadow><white><arg:emoji></white></!shadow></hover>"
+      book: "<hover:show_text:'<arg:keyword>'><!shadow><white><arg:emoji></white></!shadow></hover>"
+      anvil: "<!i><!shadow><white><arg:emoji></white></!shadow></!i>"
+
+# 应用模板 — 只写不同的部分
+emoji:
+  default:smiley:
+    template: default:emoji/basic
+    overrides:
+      image: default:emojis:0:0
+      permission: emoji.smile
+      keywords:
+        - ':smiley:'
+        - ':)'
+
+  default:angry:
+    template: default:emoji/basic
+    overrides:
+      image: default:emojis:0:1
+      permission: emoji.angry
+      keywords:
+        - ':angry:'
+```
+
+模板提供默认值，`overrides` 只替换你指定的字段。几十个表情也能干净管理。
+
+## 配置参考
+
+`config.yml` 中的 `emoji` 部分：
+
+```yaml
+emoji:
+  # 表情替换在哪些场景生效
+  contexts:
+    chat: true
+    book: true
+    anvil: true
+    sign: true
+
+  # 每条消息最多替换多少个表情，防止刷屏卡顿
+  max-emojis-per-parse: 16
+```
+
+## 兼容性
+
+表情使用 Paper 的现代聊天组件 API 渲染。依赖 Bukkit 旧版聊天事件的插件无法正确显示表情内容。
+
+如果聊天插件支持自定义字体（如 TrChat），建议将表情图片的 `font` 设为自定义字体，而不是 `minecraft:default`，以免玩家直接输入原始字符。

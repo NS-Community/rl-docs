@@ -1,0 +1,696 @@
+---
+title: 🍳 配方
+id: recipe
+---
+
+import Highlight from '@site/src/components/Highlight';
+import MinecraftRecipe, {MinecraftRecipeRow, MinecraftBrewingRecipe} from '@site/src/components/MinecraftRecipe';
+import McSprite from '@site/src/components/McSprite';
+import {recipeItems as items, recipeBookRecipes} from '@site/src/components/minecraftRecipeItems';
+import MinecraftRecipeBook from '@site/src/components/MinecraftRecipeBook';
+
+## 准备工作
+
+配置新配方前，建议先了解标签、物品来源和配方解锁等基础概念。
+
+### 标签
+
+CraftEngine 支持原版标签和自定义标签。引用标签时使用 `#namespace:tag` 格式。
+
+:::tip
+
+部分合成插件无法为物品分配标签，也不能在配方中引用标签。例如，新建的木板类型可能无法与原版木板共同参与配方。CraftEngine 的标签支持可以解决这类兼容问题。
+
+:::
+
+以下示例为 `palm_planks` 添加两个原版标签，使其能够参与数据包中引用这些标签的配方。
+
+```yaml
+items:
+  default:palm_planks:
+    material: paper
+    settings:
+      fuel_time: 300
+      tags:
+        - "minecraft:planks"
+        - "minecraft:wooden_tool_materials"
+    data:
+      item_name: "<!i>棕榈木板"
+```
+
+<MinecraftRecipeRow>
+<MinecraftRecipe
+  pattern={['PPP', 'P O', 'POO']}
+  ingredients={{
+    P: {...items.palmPlanks, tags: ['minecraft:planks']},
+    O: {...items.oakPlanks, tags: ['minecraft:planks']},
+  }}
+  result={items.chest}
+  caption={<code>#minecraft:planks</code>}
+/>
+
+<MinecraftRecipe
+  pattern={['PPO', ' S ', ' S ']}
+  ingredients={{
+    P: {...items.palmPlanks, tags: ['minecraft:wooden_tool_materials']},
+    O: {...items.oakPlanks, tags: ['minecraft:wooden_tool_materials']},
+    S: items.stick,
+  }}
+  result={items.woodenPickaxe}
+  caption={<code>#minecraft:wooden_tool_materials</code>}
+/>
+</MinecraftRecipeRow>
+
+### 数据组件谓词
+
+谓词允许你为配方原料设置除物品 ID 或标签之外的额外条件，例如特定魔咒或数据组件。
+
+```yaml
+recipes:
+  default:sharpness_upgrade:
+    type: shapeless_transform
+    ingredients:
+      - items: minecraft:diamond_sword
+        source: true
+      - items: minecraft:paper
+        predicate:
+          - type: enchantment
+            enchantments:
+              minecraft:sharpness: 5
+    result:
+      id: default:topaz_sword
+      count: 1
+```
+
+<MinecraftRecipe
+  pattern={['SP ', '   ', '   ']}
+  ingredients={{
+    S: items.diamondSword,
+    P: {...items.paper, enchanted: true, lore: [{text: '条件：锋利 V', color: '#ffaa00'}]},
+  }}
+  result={items.topazSword}
+/>
+
+可用谓词类型：
+
+```yaml
+# 检查魔咒
+- type: enchantment
+  enchantments:
+    minecraft:sharpness: 5
+
+# 精确数据组件匹配（高级）
+- type: exact
+  component: minecraft:custom_name
+  value: ... # NBT 标签值
+```
+
+:::tip[获取准确的组件值]
+
+手持源物品并运行 [`/ce debug item-component [组件] [json/snbt]`](../reference/commands.mdx#debug-item-component)。点击结果将其复制，然后把完整的 `(json) ...` 或 `(snbt) ...` 字符串粘贴到 `value` 中。请保留格式前缀。
+
+:::
+
+### 分组 / 标签栏
+
+```yaml
+recipes:
+  default:palm_planks:
+    type: shapeless
+    category: building
+    group: planks
+    ingredients:
+      A: "#default:palm_logs"
+    result:
+      id: default:palm_planks
+      count: 4
+```
+
+`group` 指定配方在客户端解锁后所属的分组。分组名可以自定义，但不能包含中文等非法字符。
+
+同一标签栏中，使用相同 `group` 的配方会合并为一个配方格，并轮换显示组内的物品。下面的棕榈木板和橡木木板都属于 `planks`：左键选择当前配方，右键展开组内的原料布局，再点击具体配方查看合成预览。触屏可点按展开；键盘聚焦配方格后按 ↓ 展开，Esc 关闭。
+
+<MinecraftRecipeBook recipes={recipeBookRecipes} initialCategory="building" label="配方分组示例" />
+
+`category` 决定该配方在配方书中所属的标签栏，可选类型有限。
+
+点击配方书左侧的标签，查看建筑、装备、杂项和红石配方。选中配方后，下方会显示它的 `category` 和 `group`。
+
+<MinecraftRecipeBook recipes={recipeBookRecipes} label="配方标签栏示例" />
+
+* 烧炼配方可选：`food`（食物）、`blocks`（方块）、`misc`（杂项）。
+* 合成配方可选：`building`（建筑）、`redstone`（红石）、`equipment`（装备）、`misc`（杂项）。
+
+### 与其他插件的兼容性
+
+首先，将支持的插件添加到 `config.yml` 中的此列表：
+
+```yaml
+recipe:
+  ingredient-sources:
+    - MythicMobs
+```
+
+:::info
+支持的物品来源请参阅[📦️ 外部物品来源](../compatibility/external_item_sources.mdx)。你也可以通过 API 注册自定义物品来源。
+:::
+
+接下来需要将每个外部物品源映射到对应的 CraftEngine 等效物，请参考以下配置示例：
+
+```yaml
+items: 
+  mythicmobs:kingscrown:
+    material: golden_helmet
+    data:
+      external:
+        plugin: MythicMobs
+        id: KingsCrown
+    settings:
+      tags:
+        - add_tag:if_you_want # 可选：添加标签
+```
+
+之后，只需像创建其他普通物品一样为该物品创建配方即可。
+
+```yaml
+recipes:
+  default:bench:
+    type: shaped
+    pattern:
+      - A A
+      - A A
+    ingredients:
+      A: mythicmobs:kingscrown
+    result:
+      id: default:bench
+      count: 1
+```
+
+:::caution
+
+对于用作原料的任何物品，你必须确保它们在 CraftEngine 中的命名空间是**小写**的插件名称，并且路径也应该是**小写**的。以下是一些示例，以便你了解其工作原理：
+
+* MythicMobs 中名为 `MySword` 的物品 → `mythicmobs:mysword`
+* CustomFishing 中名为 `star_fish` 的物品 → `customfishing:star_fish`
+* MMOItems 中名为 `MAGIC_GEM` 且类型为 `MATERIAL` 的物品 → `mmoitems:material_magic_gem`
+* 某个**其他插件**中具有命名空间 ID 的物品 → `random_plugin:namespace_id`
+
+:::
+
+### 结果后处理器
+
+**结果后处理器**是为解决配方多样化需求引入的概念。例如，如果你想制作一把镐子，但希望输出的镐带有魔咒，那么为每个已附魔的物品都创建一个单独的配方是不切实际的。
+
+```yaml
+result:
+  id: default:topaz_pickaxe
+  count: 1
+  post_processors:
+    - type: apply_data
+      data:
+        enchantment:
+          minecraft:efficiency: 5
+```
+
+:::info
+目前为止，只有 apply_data 类型的后处理器。你可以使用 API 注册新的后处理器。
+:::
+
+### 转化处理器
+
+转化处理器用于转换配方（`smithing_transform`、`shaped_transform` 和 `shapeless_transform`），控制源物品的数据如何合并到结果中。
+
+```yaml
+transform_processors:
+  # 将物品数据应用于合并的物品上
+  - type: apply_data
+    data: 
+      item_name: "新名称"
+
+  # 合并结果和原料的魔咒信息，而不是保留其中之一
+  - type: merge_enchantments
+
+  # 保留 custom_data 组件的特定数据（1.20.5+）
+  - type: keep_custom_data
+    paths:
+      - weapon
+      - energy.fly
+
+  # 保留指定组件（1.20.5+）
+  - type: keep_components
+    components:
+      - minecraft:enchantments
+
+  # 保留指定 NBT 标签（1.20–1.20.4）
+  - type: keep_tags
+    tags:
+      - display.Name
+      - CustomModelData
+```
+
+### 视觉结果
+
+<Highlight color="#f2184eff">**付费版专属**</Highlight>
+
+视觉结果功能能够防止玩家提前预知合成/锻造配方的结果。这对于包含随机化物品的配方特别有用。
+
+```yaml
+result:
+  id: default:topaz_sword
+  count: 1
+visual_result:
+  id: default:topaz_sword
+  count: 1
+  post_processors:
+    - type: apply_data
+      data:
+        remove_components:
+          - attribute_modifiers
+        lore:
+          - "<gray>攻击伤害 1~3"
+          - "<gray>攻击速度 1~2"
+```
+
+### 函数
+
+<Highlight color="#f2184eff">**付费版专属**</Highlight>
+
+当物品成功合成/锻造时，可利用函数执行特定操作。
+
+```yaml
+recipes:
+  default:bench:
+    functions:
+      - type: command
+        command: say 1
+```
+
+### 条件
+
+<Highlight color="#f2184eff">**付费版专属**</Highlight>
+
+条件允许为该配方设定要求，从而阻止不符合这些条件的玩家使用。
+
+```yaml
+recipes:
+  default:bench:
+    conditions:
+      - type: permission
+        permission: recipe.unlock.bench
+```
+
+### 配方解锁
+
+#### 自动解锁
+
+如果玩家拥有了该配方的所有原料且满足此配方的条件，则自动为玩家解锁该配方。该选项默认值可在 `config.yml` 里设置。
+
+```yaml
+recipes:
+  default:amethyst_torch:
+    unlock_on_ingredient_obtained: true
+```
+
+#### 进服解锁
+
+设为 `true` 时，玩家进服后会自动解锁该配方，无需先获取原料。
+
+```yaml
+recipes:
+  default:amethyst_torch:
+    unlock_on_join: true
+```
+
+也可以在 `config.yml` 中全局控制此行为：
+
+```yaml
+recipe:
+  unlock-on-join:
+    all: false   # 是否在进服时解锁全部配方
+    list:        # 额外在进服时解锁的配方 id
+      - default:amethyst_torch
+```
+
+## 配方类型
+
+:::caution
+
+**重要提示：**
+
+当你重载**数据包**后，请重载配方，否则注册的配方会失效。
+
+:::
+
+### 有序合成配方
+
+```yaml
+recipes:
+  default:topaz_shovel:
+    type: shaped
+    pattern:
+      - "A"
+      - "B"
+      - "B"
+    ingredients:
+      A: "default:topaz"
+      B: "minecraft:stick"
+    result:
+      id: default:topaz_shovel
+      count: 1
+```
+
+<MinecraftRecipe
+  pattern={[' T ', ' S ', ' S ']}
+  ingredients={{T: items.topaz, S: items.stick}}
+  result={items.topazShovel}
+/>
+
+```yaml
+recipes:
+  default:chinese_lantern:
+    type: shaped
+    pattern:
+      - "ABA"
+      - "BCB"
+      - "ABA"
+    ingredients:
+      A: "#minecraft:planks"
+      B: "minecraft:stick"
+      C: "minecraft:torch"
+    result:
+      id: default:chinese_lantern
+      count: 1
+```
+
+<MinecraftRecipe
+  pattern={['PSO', 'STS', 'OSP']}
+  ingredients={{
+    P: {...items.palmPlanks, tags: ['minecraft:planks']},
+    O: {...items.oakPlanks, tags: ['minecraft:planks']},
+    S: items.stick,
+    T: items.torch,
+  }}
+  result={items.chineseLantern}
+/>
+
+```yaml
+recipes:
+  default:enchanted_cobblestone:
+    type: shaped
+    pattern:
+      - " A "
+      - "AAA"
+      - " A "
+    ingredients:
+      A: 
+        items: "minecraft:cobblestone"
+        count: 32
+    result:
+      id: default:enchanted_cobblestone
+      count: 1
+```
+
+<MinecraftRecipe
+  pattern={[' C ', 'CCC', ' C ']}
+  ingredients={{C: {...items.cobblestone, count: 32}}}
+  result={items.enchantedCobblestone}
+/>
+
+### 有序合成转化配方
+
+```yaml
+default:topaz_crossbow_transform:
+  type: shaped_transform
+  pattern:
+    - 'BBB'
+    - 'B  '
+    - 'A  '
+  ingredients:
+    A:
+      item: minecraft:crossbow
+      source: true  # 设置为源物品
+    B: default:topaz
+  result:
+    id: default:topaz_crossbow
+    count: 1
+  transform_processors:
+    - type: keep_components
+      components:
+        - enchantments
+```
+
+<MinecraftRecipe
+  pattern={['TTT', 'T  ', 'C  ']}
+  ingredients={{
+    T: items.topaz,
+    C: {...items.crossbow, enchanted: true},
+  }}
+  result={{...items.topazCrossbow, enchanted: true, lore: [{text: '保留源物品的魔咒', color: '#ffaa00'}]}}
+/>
+
+### 无序合成配方
+
+```yaml
+recipes:
+  default:palm_planks:
+    type: shapeless
+    category: building
+    group: planks
+    ingredients:
+      - "#default:palm_logs"
+      # 嵌套列表也受支持
+      - - test:ingredient1
+        - test:ingredient2
+    result:
+      id: default:palm_planks
+      count: 4
+```
+
+<MinecraftRecipeRow>
+<MinecraftRecipe
+  pattern={['LX ', '   ', '   ']}
+  ingredients={{
+    L: {...items.palmLog, tags: ['default:palm_logs']},
+    X: {icon: 'paper', name: '测试原料 1', id: 'test:ingredient1', lore: [{text: '图标仅作示意', color: '#ffaa00'}]},
+  }}
+  result={{...items.palmPlanks, count: 4}}
+  caption="原料选择示例 1"
+/>
+<MinecraftRecipe
+  pattern={['   ', ' X ', '  L']}
+  ingredients={{
+    L: {...items.strippedPalmLog, tags: ['default:palm_logs']},
+    X: {icon: 'paper', name: '测试原料 2', id: 'test:ingredient2', lore: [{text: '图标仅作示意', color: '#ffaa00'}]},
+  }}
+  result={{...items.palmPlanks, count: 4}}
+  caption="原料选择示例 2"
+/>
+</MinecraftRecipeRow>
+
+原料摆放位置不限。第二份原料可从嵌套列表中任选一个，图中的纸张仅用于示意测试物品。
+
+```yaml
+recipes:
+  default:enchanted_cobblestone:
+    type: shapeless
+    ingredients:
+      - items: "minecraft:cobblestone"
+        count: 32
+      - items: "minecraft:cobblestone"
+        count: 32
+      - items: "minecraft:cobblestone"
+        count: 32
+      - items: "minecraft:cobblestone"
+        count: 32
+      - items: "minecraft:cobblestone"
+        count: 32
+    result:
+      id: default:enchanted_cobblestone
+      count: 1
+```
+
+<MinecraftRecipe
+  pattern={['CCC', 'CC ', '   ']}
+  ingredients={{C: {...items.cobblestone, count: 32}}}
+  result={items.enchantedCobblestone}
+/>
+
+### 无序合成转化配方
+
+无序合成转化配方与无序合成配方类似，但必须将一个原料标记为 `source: true`。源物品的数据会被合并到最终结果中，适合用于升级已有物品。
+
+```yaml
+recipes:
+  default:topaz_sword_transform:
+    type: shapeless_transform
+    ingredients:
+      - items: minecraft:diamond_sword
+        source: true  # 设置为源物品
+      - default:topaz
+    # 是否将源物品的组件合并到结果中
+    merge_components: true # 默认值：true
+    result:
+      id: default:topaz_sword
+      count: 1
+    transform_processors:
+      - type: keep_components
+        components:
+          - enchantments
+```
+
+<MinecraftRecipe
+  pattern={['ST ', '   ', '   ']}
+  ingredients={{
+    S: items.diamondSword,
+    T: items.topaz,
+  }}
+  result={{...items.topazSword, lore: [{text: '保留源物品的魔咒', color: '#ffaa00'}]}}
+/>
+
+### 烧炼配方
+
+烧炼配方包含`smelting`(熔炉)、`blasting`(高炉)、`smoking`(烟熏炉)和`campfire_cooking`(营火)四种类型，所有类型采用相同配置格式。
+
+```yaml
+recipes:
+  default:topaz_from_smelting_topaz_ore:
+    type: smelting
+    experience: 1.0
+    category: misc
+    group: topaz
+    time: 200
+    ingredient: "default:topaz_ore"
+    result:
+      id: default:topaz
+      count: 1
+  default:topaz_from_smelting_deepslate_topaz_ore:
+    type: smelting
+    experience: 1.0
+    category: misc
+    group: topaz
+    time: 200
+    ingredient: "default:deepslate_topaz_ore"
+    result:
+      id: default:topaz
+      count: 1
+```
+
+<MinecraftRecipeRow>
+<MinecraftRecipe
+  type="furnace"
+  pattern={['OF']}
+  ingredients={{O: items.topazOre, F: items.blazeRod}}
+  result={items.topaz}
+  caption="黄玉矿石 · 200 tick · 1.0 经验"
+>
+  <McSprite name="furnace/lit_progress" x={56} y={36} width={14} height={14} />
+  <McSprite name="furnace/burn_progress" x={79} y={34} width={24} height={16} />
+</MinecraftRecipe>
+<MinecraftRecipe
+  type="furnace"
+  pattern={['OF']}
+  ingredients={{O: items.deepslateTopazOre, F: items.blazeRod}}
+  result={items.topaz}
+  caption="深层黄玉矿石 · 200 tick · 1.0 经验"
+>
+  <McSprite name="furnace/lit_progress" x={56} y={36} width={14} height={14} />
+  <McSprite name="furnace/burn_progress" x={79} y={34} width={24} height={16} />
+</MinecraftRecipe>
+</MinecraftRecipeRow>
+
+### 切石机配方
+
+```yaml
+recipes:
+  default:stonecutting_example:
+    type: stonecutting
+    group: topaz
+    ingredient: "minecraft:stone"
+    result:
+      id: default:topaz
+      count: 1
+```
+
+:::warning
+
+切石机配方是较为特殊的配方类型，不建议使用自定义物品作为原料，这极可能导致严重的客户端显示问题
+
+:::
+
+<MinecraftRecipe
+  type="stonecutter"
+  pattern={['ST']}
+  ingredients={{S: items.stone, T: items.topaz}}
+  result={items.topaz}
+/>
+
+### 锻造升级配方
+
+```yaml
+default:topaz_bow:
+  type: smithing_transform
+  template_type: default:topaz # 槽位1（可选）
+  base: minecraft:bow # 槽位2（必填）
+  addition: default:topaz # 槽位3（可选）
+  # 是否像原版那样合并两个物品的组件
+  merge_components: true # 默认值：true
+  result:
+    id: default:topaz_bow
+    count: 1
+    post_processors: [] # 结果后处理器，看上面的文档解释
+  transform_processors: []
+```
+
+<MinecraftRecipe
+  type="smithing"
+  pattern={['TBT']}
+  ingredients={{T: items.topaz, B: items.bow}}
+  result={items.topazBow}
+/>
+
+### 盔甲纹饰配方
+
+```yaml
+default:bolt_tool_trims:
+  type: smithing_trim
+  template_type: "minecraft:bolt_armor_trim_smithing_template"
+  base: "#minecraft:trimmable_tool"
+  addition: "#minecraft:trim_materials"
+  pattern: minecraft:bolt # 需要在 1.21.5+
+```
+
+<MinecraftRecipe
+  type="smithing"
+  pattern={['TPG']}
+  ingredients={{
+    T: items.boltTemplate,
+    P: {...items.topazPickaxe, tags: ['minecraft:trimmable_tool']},
+    G: {...items.goldIngot, tags: ['minecraft:trim_materials']},
+  }}
+  result={{...items.topazPickaxe, lore: [{text: '镶铆盔甲纹饰', color: '#ffaa00'}, {text: '材质：金', color: '#ffaa00'}]}}
+/>
+
+### 酿造配方
+
+<Highlight color="#0dda4aff">**1.20.2+**</Highlight>
+
+酿造配置也支持与数据包一致的键名：`reagent` 对应 `ingredient`/`ingredients`，`input` 对应 `container`，`output` 对应 `result`。值仍使用相同的 CraftEngine 配置格式。两种键名同时存在时，原有键名优先。
+
+Minecraft 26.3 及以上版本的酿造配方与工作台配方使用统一的原生注册和重载流程。原版和数据包酿造配方也会被注入：物品 tag 和材料替代可以包含自定义物品，同时保留药水类型、药水 tag、效果条件和产物组件。Paper 1.20.2–26.2 继续使用旧的 PotionMix 注册方案。
+
+```yaml
+tea_art:tea:
+  type: brewing
+  ingredient: tea_art:tea_leaf
+  container: tea_art:cup
+  result:
+    id: tea_art:cup_of_tea
+    count: 1
+```
+<MinecraftBrewingRecipe
+  ingredient={{icon: 'oak_leaves', name: '茶叶', id: 'tea_art:tea_leaf'}}
+  container={{icon: 'glass_bottle', name: '茶杯', id: 'tea_art:cup'}}
+  result={{icon: 'water_bottle', name: '一杯茶', id: 'tea_art:cup_of_tea'}}
+/>
+
+这里用原版树叶、玻璃瓶和水瓶示意茶叶、茶杯和茶水，实际外观由你的资源包决定。

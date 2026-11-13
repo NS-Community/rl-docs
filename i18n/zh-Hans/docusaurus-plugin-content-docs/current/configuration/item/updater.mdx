@@ -1,0 +1,109 @@
+---
+title: 🔄 物品更新器
+id: updater
+---
+
+物品更新器用于在配置变更后修补玩家背包中已存在的物品。与 `client_bound_data` 只改外观不同，更新器直接修改物品在服务端的实际数据。
+
+## 工作原理
+
+每个物品携带一个内部版本标记（`craftengine:version`，默认 `0`）。当触发器事件发生时，插件读取物品的当前版本，重放 `updater` 配置中所有高于当前版本的步骤，然后将物品标记为最新版本。
+
+```
+旧物品（版本 0）被拾取
+  → 执行版本 1、2 的更新步骤
+  → 物品版本升至 2
+  → 不再需要更新
+```
+
+**新创建的物品不会经过更新器。** 它们直接根据 `data` 节点构建，并带有最新版本标记。因此，每次添加 updater 步骤时，也必须同步更新 `data`，使新旧物品最终得到相同结果。
+
+## 配置更新器
+
+黄金法则：**`data` 构建新物品，`updater` 修补旧物品，两者必须一致。**
+
+```yaml
+items:
+  default:my_sword:
+    material: stone_sword              # ← 新物品从这里开始
+    data:
+      item_name: 石剑
+      lore:
+        - "最终描述"
+    updater:
+      1:
+        type: apply_data
+        data:
+          item_name: 石剑               # 旧物品：改名
+      2:
+        - type: apply_data
+          data:
+            lore:
+              - "最终描述"               # 旧物品：加描述
+        - type: transmute
+          material: stone_sword          # 旧物品：换材质
+```
+
+`updater` 下的每个键是版本号——物品当前版本低于该值时执行对应步骤。一个版本可以包含单个更新器或一个列表。旧物品重放所有高于当前版本的步骤；新物品直接拿 `data`，跳过更新器。
+
+:::danger
+如果添加了 updater 却忘记更新 `data`，旧物品会被正确修补，但**新物品会保留旧的值**。
+:::
+
+## 更新器类型
+
+### apply_data
+
+应用 CraftEngine 支持的任何物品数据，格式与 [🔢 物品数据](./data.mdx) 相同：
+
+```yaml
+type: apply_data
+data:
+  item_name: 更新后的名称
+  lore:
+    - "新的描述"
+```
+
+### transmute
+
+替换基础材质，保留所有组件和 NBT：
+
+```yaml
+type: transmute
+material: stone_sword
+```
+
+### reset
+
+用最新配置从零重建物品，只保留指定的数据：
+
+```yaml
+type: reset
+# 1.20.5+：保留的组件
+keep_components:
+  - minecraft:enchantments
+  - minecraft:custom_name
+# 旧版本（< 1.20.5）：保留的 NBT 路径
+keep_tags:
+  - Enchantments
+  - display.Name
+```
+
+:::caution
+未列入 `keep_components` 或 `keep_tags` 的内容会被**丢弃**。务必显式声明所有要保留的字段。
+:::
+
+## 启用触发器
+
+更新器仅在特定事件中激活，**默认全部关闭**。在 `config.yml` 中按需开启：
+
+```yaml
+item:
+  update-triggers:
+    click-in-inventory: false   # 点击物品栏（创造模式无效）
+    drop: false                 # 丢弃物品
+    pick-up: false              # 拾取物品
+    attack: false               # 攻击
+```
+
+每个触发器都会带来性能开销——插件需要在每次事件中检查所有受影响的物品。只开启必要的。

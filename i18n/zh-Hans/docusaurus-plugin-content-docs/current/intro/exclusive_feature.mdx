@@ -1,0 +1,62 @@
+---
+title: ☄️ 独家功能
+id: exclusive_feature
+---
+
+import ColoredLink from '@site/src/components/ColoredLink';
+import Highlight from '@site/src/components/Highlight';
+
+## 不破坏原版方块行为
+
+CraftEngine 将闲置的音符盒、绊线等方块重新定义为自定义方块状态——完全不影响其原有的服务端机制。无需为定制内容牺牲原版特性，鱼与熊掌兼得。
+
+![](/img/preserve_vanilla_block_behavior.png)
+
+## 任意方块状态作为模型
+
+CraftEngine 不会硬编码特定方块，你可以使用任意可用的原版方块状态承载自定义模型。
+
+![](/img/use_any_block.png)
+
+## 数据包与世界生成集成
+
+CraftEngine 注册的是真实方块，可以直接在数据包、Iris 和 Terra 中使用，例如生成自定义树木、重新设计末地或建造自定义结构。
+
+![](/img/datapack_tree.png)
+
+:::caution
+CraftEngine 能够让数据包直接使用自定义方块。部分插件只能在数据包中以**原版等效方块**代替自定义方块，这种方案在某些场景下会产生错误结果。
+
+数据包进行旋转或镜像变换时，这类替代方案可能生成错误的方块状态。此外，如果用真实的音符盒方块代替自定义树干，周围的树叶还可能因无法识别原木而枯萎。
+
+CraftEngine 创建的自定义方块则能保留正确行为：多朝向方块可以随数据包结构正确旋转，自定义原木也能防止相邻树叶枯萎。
+:::
+
+## 资源包保护
+
+<Highlight color="#f2184eff">**付费版专属**</Highlight>
+
+CraftEngine 通过混淆技术保护资源包，使其只能由 Minecraft 客户端正常读取，并阻止 Bandizip、JD-GUI 等常见工具直接提取内容。
+
+保护措施还包括：
+
+- 通过混淆永久改变文件结构
+- 使用专有的纹理图集算法，将模型贴图合并为大型图集，从而减小资源包体积并提高提取难度
+
+![](/img/pack_obfuscation.png)
+
+## 客户端侧物品组件
+
+<Highlight color="#f2184eff">**付费版专属**</Highlight>
+
+CraftEngine 可以通过客户端组件动态调整物品名称、工具提示和外观，从而实时更新物品贴图，甚至为不同玩家显示不同效果。
+
+![](/img/i18n/zh-Hans/clientbound_data.png)
+
+## 实体剔除
+
+<Highlight color="#f2184eff">**付费版专属**</Highlight>
+
+实体剔除会根据玩家视野控制家具和方块实体的可见性，减少加载无关实体造成的客户端卡顿。
+
+![](/img/entity_culling.png)

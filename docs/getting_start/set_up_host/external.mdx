@@ -1,0 +1,38 @@
+---
+title: External
+id: external
+---
+
+```yaml
+resource-pack:
+  packs:
+    default:
+      type: external
+      default: true
+      url: "https://packs.example.com/resource_pack.zip"
+      # Optional: SHA-1 of the ZIP at this URL.
+      # sha1: "0123456789abcdef0123456789abcdef01234567"
+      # Optional: omit to derive a UUID from the URL.
+      # uuid: "123e4567-e89b-12d3-a456-426614174000"
+```
+
+:::info
+
+Host your resource pack on an external server.
+This eliminates bandwidth consumption on your own server.
+
+Typically, after uploading your resource pack to a hosting platform, it will provide you with:
+
+- URL
+- UUID (Optional)
+- SHA1 (Optional)
+
+Simply fill these three fields with the corresponding values.
+
+:::
+
+:::caution
+
+Note that regular resource pack updates are required to maintain version integrity. This maintenance procedure requires manual intervention.
+
+:::

@@ -1,0 +1,175 @@
+---
+title: 👻 特殊模型
+id: special
+---
+
+## 概述
+
+调用游戏内置的**特殊模型渲染器**。渲染变换、粒子贴图变量和 GUI 光照等信息从 `base` 指定的基础模型中读取。
+
+```yaml
+items:
+  demo:head:
+    material: player_head
+    model:
+      type: minecraft:special
+      base: minecraft:item/custom/head_base
+      model:
+        type: minecraft:head
+        kind: skeleton
+        texture: minecraft:custom/heads/wizard
+        animation: 0.0
+```
+
+## 字段
+
+| 字段 | 类型 | 必需 | 默认值 | 说明 |
+|-------|------|----------|---------|-------------|
+| type | string | 是 | — | `minecraft:special` |
+| base | 资源路径 | 是* | — | 用于变换、粒子纹理和 GUI 光照的模型路径。*设置 `blueprint` 时可选——此时作为生成模型的输出路径 |
+| blueprint | string | 否 | — | 转换为基础模型 JSON 的 Blockbench `.bbmodel` 文件（见 [Blueprint](model.mdx#blueprintblockbench)） |
+| model | object | 是 | — | 特殊模型对象，带有自己的 `type`（见下方） |
+| transformation | object | 否 | — | 物品模型变换（26.1+） |
+
+## 特殊模型类型
+
+### minecraft\:head
+
+按照指定的头颅类型渲染生物头颅。
+
+```yaml
+model:
+  type: minecraft:head
+  kind: skeleton          # skeleton | wither_skeleton | player | zombie | creeper | piglin | dragon
+  texture: minecraft:custom/heads/wizard  # 可选，每种 kind 有默认值。省略 textures/entity/ 前缀和 .png 后缀
+  animation: 0.0          # 龙嘴：-2.5（闭合）到 2.5（张开）；猪灵耳朵摆动
+```
+
+### minecraft\:player_head（1.21.6+）
+
+使用 `minecraft:profile` 组件获取皮肤纹理。无额外字段。
+
+```yaml
+model:
+  type: minecraft:player_head
+```
+
+### minecraft\:chest
+
+渲染单个箱子。
+
+```yaml
+model:
+  type: minecraft:chest
+  texture: minecraft:custom/chest  # 箱子纹理图集中的路径，不含 .png
+  chest_type: single         # "single" | "left" | "right"（26.1+）
+  openness: 0.0              # 0.0（关闭）到 1.0（打开）
+```
+
+### minecraft\:shulker_box
+
+渲染潜影盒。
+
+```yaml
+model:
+  type: minecraft:shulker_box
+  texture: minecraft:custom/shulker  # 潜影盒纹理图集中的路径，不含 .png
+  openness: 0.0              # 0.0（关闭）到 1.0（打开）
+```
+
+### minecraft\:shield
+
+读取 `minecraft:banner_patterns` 和 `minecraft:base_color` 组件。无额外字段。
+
+```yaml
+model:
+  type: minecraft:shield
+```
+
+### minecraft\:banner
+
+读取 `minecraft:banner_patterns` 组件。
+
+```yaml
+model:
+  type: minecraft:banner
+  color: red                 # 16 种颜色之一（必填）
+  attachment: ground         # "ground" | "wall"（26.1+）
+```
+
+### minecraft\:trident
+
+渲染三叉戟。无额外字段。
+
+```yaml
+model:
+  type: minecraft:trident
+```
+
+### minecraft\:conduit
+
+渲染潮涌核心。无额外字段。
+
+```yaml
+model:
+  type: minecraft:conduit
+```
+
+### minecraft\:decorated_pot
+
+读取 `minecraft:pot_decorations` 组件。无额外字段。
+
+```yaml
+model:
+  type: minecraft:decorated_pot
+```
+
+### minecraft\:bell（26.1+）
+
+渲染钟的动画部分。
+
+```yaml
+model:
+  type: minecraft:bell
+```
+
+### minecraft\:book（26.1+）
+
+根据指定的角度渲染书。
+
+```yaml
+model:
+  type: minecraft:book
+  open_angle: 0    # 角度：0 = 闭合，90 = 平摊
+  page1: 0.0       # 翻页进度 0.0–1.0
+  page2: 0.0
+```
+
+### minecraft\:end_cube（26.1+）
+
+渲染一个特殊效果的立方体。
+
+```yaml
+model:
+  type: minecraft:end_cube
+  effect: portal     # "portal" | "gateway"
+```
+
+### minecraft\:copper_golem_statue
+
+根据指定的纹理渲染铜傀儡像。
+
+```yaml
+model:
+  type: minecraft:copper_golem_statue
+  pose: standing       # "standing" | "sitting" | "running" | "star"
+  texture: minecraft:custom/statue.png  # 完整路径，需含 .png 后缀
+```
+
+### 已移除的类型
+
+| 类型 | 移除版本 | 说明 |
+|------|-----------|-------|
+| `minecraft:bed` | 26.2 snap3 | 被基于方块的渲染替代 |
+| `minecraft:standing_sign` | 26.2 snap7 | 被基于方块的渲染替代 |
+| `minecraft:hanging_sign` | 26.2 snap7 | 被基于方块的渲染替代 |

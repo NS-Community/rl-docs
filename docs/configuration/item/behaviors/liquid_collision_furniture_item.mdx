@@ -1,0 +1,31 @@
+---
+title: 🌊 Liquid Collision Furniture Item
+id: liquid_collision_furniture_item
+---
+
+Like [furniture_item](furniture_item.mdx), but allows placement on **liquid surfaces**.
+
+```yaml
+items:
+  default:water_lily:
+    behavior:
+      type: liquid_collision_furniture_item
+      rules:
+        ground:
+          rotation: four
+          alignment: center
+      furniture: default:water_lily
+      ignore_placer: false       # Ignore placer's collision during placement
+      ignore_entities: false     # Ignore entity collisions during placement
+      source_only: true          # Only place on liquid source blocks
+      liquid_type:
+        - water
+        # - lava
+      against_blocks:            # Blocks the furniture CANNOT be placed against (block ID or state)
+        - minecraft:dirt
+      against_block_tags:       # Block tags the furniture CANNOT be placed against
+        - minecraft:dirt          #   (tag without # prefix)
+      blacklist: false           # true = blacklist mode (default), false = whitelist mode
+```
+
+See [furniture_item](furniture_item.mdx) for `rules`, `furniture`, and other shared fields.

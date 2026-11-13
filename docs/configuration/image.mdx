@@ -1,0 +1,292 @@
+---
+title: 🖼️ Image
+id: image
+---
+
+import PluginFileTree from '@site/src/components/PluginFileTree';
+
+## Quick Start
+
+The image system turns PNG files into characters you can use anywhere in text. Here's the shortest possible path from zero to seeing an image in-game:
+
+**Step 1** — Create an image config in any pack under `configuration/`:
+
+```yaml
+images:
+  my_pack:star:
+    height: 10
+    ascent: 9
+    font: my_pack:ui
+    file: my_pack:font/ui/star.png
+```
+
+**Step 2** — Use it in an item name:
+
+```yaml
+items:
+  my_pack:star_sword:
+    material: diamond_sword
+    data:
+      item_name: "<!i><white><image:my_pack:star> Star Sword"
+```
+
+That's it. The `<image:namespace:id>` tag inserts the image character bound to your font.
+
+---
+
+The rest of this page explains each piece in depth: how to configure images, how to use them in different contexts, and how to combine them into complex UIs.
+
+## Image Configuration
+
+### Basic Fields
+
+An image entry lives under `images:` in any pack config. Each image has a unique ID in `namespace:id` form.
+
+```yaml
+images:
+  internal:item_browser:
+    height: 140        # Height of each glyph in pixels. Aliases: scale, scale_ratio
+    ascent: 18         # Vertical offset from the text baseline. Alias: y_position
+    font: minecraft:internal
+    file: minecraft:font/gui/custom/item_browser.png
+    char: '\ub000'     # Optional. Aliases: chars, unicode
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| file | **Yes** | Path to the PNG. `.png` extension is auto-appended if missing. |
+| height | Auto-detected | Glyph height in pixels. If omitted, the plugin reads the PNG height. |
+| ascent | Defaults to `height - 1` | Baseline offset. Increasing this moves the image upward on screen. |
+| font | Defaults to `namespace:default` | Which font this image belongs to. |
+| char | Auto-assigned | The codepoint mapped to this image. |
+
+:::caution
+- `height` must be **≥** `ascent`. This is enforced by Minecraft.
+- A single glyph must not exceed **256×256** pixels. This applies to each cell, not the whole PNG.
+:::
+
+### Character Assignment
+
+If you omit `char`, the plugin picks a free codepoint for you. This is the **recommended** approach — no risk of conflicts.
+
+If you need a specific character:
+
+```yaml
+# Fixed codepoint
+char: '\ub000'
+
+# Numeric value
+char: 1000
+
+# Direct character
+char: '我'
+```
+
+### Vertical Positioning
+
+The `ascent` field controls where the glyph sits relative to the text baseline. A higher `ascent` moves the image upward.
+
+If you need the image to sit higher than `height` allows (remember `ascent ≤ height`), add transparent pixels to the **bottom** of the PNG — this increases `height` and gives you room for a larger `ascent`.
+
+## Sprite Sheets
+
+When a single PNG contains multiple icons in a grid, use `chars` to define each row:
+
+```yaml
+images:
+  default:icons:
+    height: 10
+    ascent: 9
+    font: minecraft:icons
+    file: minecraft:font/image/icons.png
+    chars:
+     - '\ub000\ub001\ub002'   # Row 0
+     - '\ub003\ub004\ub005'   # Row 1
+```
+
+Each string is one row; characters within a row map left-to-right. All rows must have the same length.
+
+### Auto-Arrangement with grid_size
+
+Let the plugin handle character allocation for you:
+
+```yaml
+images:
+  default:icons:
+    height: 10
+    ascent: 9
+    font: minecraft:icons
+    file: minecraft:font/image/icons.png
+    grid_size: 2,3   # 2 rows × 3 columns → 6 cells
+```
+
+## Referencing Individual Cells
+
+Give a meaningful name to a specific cell from a sprite sheet:
+
+```yaml
+images:
+  # Short form
+  default:angry:
+    ref: default:emojis:0:1
+
+  # Long form
+  default:sad:
+    ref: default:emojis
+    row: 0
+    column: 2
+```
+
+A reference has no `file`, `height`, or `font` of its own — it points to an existing bitmap cell.
+
+## Using Images
+
+### MiniMessage Tag
+
+Available in item names, lore, messages, GUIs — anywhere MiniMessage is parsed:
+
+```
+<image:namespace:id>
+<image:namespace:id:row>
+<image:namespace:id:row:column>
+<image:namespace:id:row:column:format>
+```
+
+```yaml
+# First cell
+item_name: "<!i><white><image:default:icons> Topaz Rod"
+
+# Specific cell
+item_name: "<!i><white><image:default:icons:0:1> Topaz Rod"
+
+# Apply formatting to the glyph itself
+item_name: "<!i><red><image:default:icons:0:1:'<!shadow><white>'> Topaz Rod"
+```
+
+The optional `format` argument prepends MiniMessage styling to the image character — useful for removing shadows or adjusting color.
+
+### Previewing
+
+```
+/ce debug image <namespace:id> [row] [column]
+```
+
+The command outputs clickable copy buttons:
+- **MiniMessage**: `<font:namespace:font_name>char</font>`
+- **MineDown**: `[char](font=namespace:font_name)`
+- **RAW JSON**: `{"text":"char","font":"namespace:font_name"}`
+
+### Packet-Level Tags
+
+For plugins that don't support MiniMessage, CraftEngine can intercept and replace `<image:namespace:id>` tags at the network level. See the [Compatibility](#compatibility) section below and enable the relevant interceptors in `config.yml` → `network.intercept-packets`.
+
+## Building UIs with Image & Shift
+
+`<shift>` and `<image>` are the building blocks for custom in-game interfaces. `<shift:N>` inserts a character whose glyph width displaces subsequent text by `N` pixels (negative = left, positive = right).
+
+Chain them together to compose layouts:
+
+```yaml
+title: "<white><shift:-11><image:internal:cooking_recipe><shift:-136><image:internal:blasting>"
+```
+
+1. `<shift:-11>` — center the layout
+2. `<image:internal:cooking_recipe>` — first icon
+3. `<shift:-136>` — move back to position the second icon
+4. `<image:internal:blasting>` — second icon beside the first
+
+Under the hood, each shift value is a pre-configured image with carefully tuned `height`/`ascent` to produce the exact pixel displacement:
+
+```yaml
+# config.yml
+image:
+  offset-characters:
+    enable: true
+    font: minecraft:default
+    -1: ''
+    1: ''
+    # ... ranging from -256 to +256
+```
+
+:::warning
+Do not modify `offset-characters` unless you understand Minecraft's glyph metrics. Wrong values corrupt text layout.
+:::
+
+## Configuration Reference
+
+The `image` section in `config.yml`:
+
+```yaml
+image:
+  # Block players from typing raw codepoint characters directly
+  illegal-characters-filter:
+    anvil: true
+    book: true
+    chat: true
+    command: true
+    sign: true
+
+  # Starting codepoint for auto-assignment, per font
+  codepoint-starting-value:
+    default: 19968
+    overrides:
+      minecraft:default: 57344
+```
+
+:::info
+
+**Which font should I use?** Custom fonts (anything other than `minecraft:default`) are inherently safe — players can only type characters in `minecraft:default`, so they cannot directly input glyphs from your custom fonts.
+
+Only use `minecraft:default` when required (e.g., vanilla language files). In that case, keep `illegal-characters-filter` enabled.
+:::
+
+## Compatibility
+
+### PlaceholderAPI
+
+```
+%image_mm_namespace:id[:row:column]%   # MiniMessage
+%image_md_namespace:id[:row:column]%   # MineDown
+%image_raw_namespace:id[:row:column]%  # Raw character
+```
+
+See the [PlaceholderAPI page](../compatibility/placeholderapi.mdx) for the full list.
+
+### Packet Interception
+
+For plugins without MiniMessage support, CraftEngine can intercept and replace tags at the network level. Enable the channels you need:
+
+```yaml
+network:
+  intercept-packets:
+    system-chat: true
+    actionbar: true
+    title: true
+    bossbar: true
+    container: true
+    item: true
+    # ... and more
+```
+
+:::tip
+Each interceptor adds work to the Netty thread. Disable any you don't need to optimize Netty performance.
+:::
+
+## Vanilla Language Files
+
+Vanilla language files (`assets/minecraft/lang/*.json`) always render with `minecraft:default`, so images used in them must use that font:
+
+```yaml
+images:
+  test:custom_ui:
+    height: 140
+    ascent: 18
+    font: minecraft:default
+    file: minecraft:font/gui/custom/gui.png
+```
+
+```yaml
+langs:
+  en_us:
+    container.custom_furnace: "<image:test:custom_ui>"
+```

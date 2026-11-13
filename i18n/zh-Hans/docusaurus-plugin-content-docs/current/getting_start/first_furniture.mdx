@@ -1,0 +1,125 @@
+---
+title: 🪑 第一件家具
+id: first_furniture
+---
+
+方块只能对齐网格，家具则可以自由摆放。CraftEngine 的家具系统基于展示实体，能够以像素级精度控制位置。
+
+## 第 1 步：给家具准备一个物品模型
+
+家具不直接指定贴图，而是通过引用物品来显示模型，因此需要先创建一个物品。
+
+使用 Blockbench 制作椅子模型，将导出的 JSON 保存为 `models/item/chair.json`，并将贴图放到对应目录。然后添加以下配置：
+
+```yaml
+items:
+  tutorial:my_chair:
+    material: paper
+    model: tutorial:item/chair
+```
+
+运行 `/ce item get tutorial:my_chair` 后，背包中会出现一把椅子。此时它仍是普通物品，右键使用不会执行任何操作。
+
+## 第 2 步：让物品能放置家具
+
+```yaml
+items:
+  tutorial:my_chair:
+    material: paper
+    model: tutorial:item/chair
+    behavior:
+      type: furniture_item
+      rules:
+        ground:
+          rotation: four
+          alignment: center
+      furniture:
+        variants:
+          ground:
+            elements:
+              - item: tutorial:my_chair
+            hitboxes:
+              - position: 0,0,0
+                type: shulker
+```
+
+依次运行 `/ce reload all` 和 `/ce item get tutorial:my_chair`，然后右键点击地面，即可放置椅子。
+
+- `model: tutorial:item/chair` — 指定物品栏中显示的椅子模型
+- `type: furniture_item` — 让物品可以右键放置家具
+- `rules.ground` — 地面放置规则。`rotation: four` 将旋转角度限制为四个方向，`alignment: center` 将家具对齐到方块中心；此项可选
+- `variants` — 家具至少需要一个变体。默认根据点击面选择变体，例如点击顶面时使用 `ground`
+- `elements.item: tutorial:my_chair` — 把这个物品的模型显示出来
+- `hitboxes` — 碰撞箱。`type: shulker` 表示使用潜影贝碰撞，实体和玩家无法穿过
+
+## 第 3 步：设置家具属性
+
+在 `variants` 同级别加上 `settings`：
+
+```yaml
+      furniture:
+        settings:
+          hit_times: 3
+          sounds:
+            break: minecraft:block.bamboo_wood.break
+            place: minecraft:block.bamboo_wood.place
+            hit: minecraft:block.bamboo_wood.hit
+        variants:
+          ground:
+            elements:
+              - item: tutorial:my_chair
+            hitboxes:
+              - position: 0,0,0
+                type: shulker
+```
+
+- `hit_times: 3` — 破坏家具所需的击打次数。默认值为 `0`，表示可以立即破坏
+- `sounds` — 破坏、放置、敲击音效
+
+## 第 4 步：添加座位
+
+```yaml
+            hitboxes:
+              - position: 0,0,0
+                type: shulker
+                blocks_building: true
+                interactive: true
+                interaction_entity: true
+                seats:
+                  - 0,0.5,0
+```
+
+- `blocks_building: true` — 阻止玩家在碰撞箱区域内放置方块
+- `interactive: true` — 交互实体是否可交互
+- `interaction_entity: true` — 额外生成交互实体
+- `seats` — 座位坐标
+
+## 第 5 步：设置家具掉落物
+
+```yaml
+      furniture:
+        settings:
+          hit_times: 3
+          sounds:
+            break: minecraft:block.bamboo_wood.break
+            place: minecraft:block.bamboo_wood.place
+            hit: minecraft:block.bamboo_wood.hit
+        variants:
+          ground:
+            elements:
+              - item: tutorial:my_chair
+            hitboxes:
+              - position: 0,0,0
+                type: shulker
+                blocks_building: true
+                interactive: true
+                interaction_entity: true
+                seats:
+                  - 0,0.5,0
+        loot:
+          template: default:loot_table/furniture
+          arguments:
+            item: tutorial:my_chair
+```
+
+这里使用 CraftEngine 内置的家具战利品表模板。配置完成后，破坏家具会掉落 `tutorial:my_chair` 物品。

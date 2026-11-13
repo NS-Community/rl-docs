@@ -1,0 +1,176 @@
+---
+title: 🧱 第一个方块
+id: first_block
+---
+
+现在来制作一个可以放置在世界中的自定义方块。
+
+## 第 1 步：最简方块
+
+[⬇ 下载黄玉方块贴图](/img/topaz_block.png)，放到：
+
+```
+resourcepack/assets/tutorial/textures/block/topaz_block.png
+```
+
+```yaml
+items:
+  tutorial:topaz_block:
+    material: paper
+    behavior:
+      type: block_item
+      block:
+        state:
+          auto_state: note_block
+          texture: tutorial:block/topaz_block
+```
+
+```
+/ce reload all
+/ce item get tutorial:topaz_block
+```
+
+右键点击地面，即可放置方块。
+
+![放置的黄玉方块](/img/placed_topaz_block.png)
+
+### 配置说明
+
+先看最外层。与上一章相同，这个条目仍然定义在 `items:` 下；新增的部分是 `behavior`：
+
+- `type: block_item` — 告诉 CraftEngine，这个物品在右键使用时会**放置方块**
+- `block:` — 定义要放置的方块
+
+`block:` 里面：
+- `state` — 定义方块的外观。此项**必填**
+- `auto_state: note_block` — 让插件从音符盒状态中自动分配一个空闲位置来显示自定义方块
+- `texture: tutorial:block/topaz_block` — 贴图路径。和物品的 `texture` 一模一样，自动生成一个六面都贴这张图的立方体模型
+
+> ⚠️ 请运行 `/ce reload all`。方块配置引用了贴图，涉及资源包变更；仅重载 `config` 不会向玩家推送新贴图。
+
+## 第 2 步：设置硬度和音效
+
+目前这个方块没有掉落物，也没有自定义音效。在 `block:` 下添加 `settings`：
+
+```yaml
+items:
+  tutorial:topaz_block:
+    material: paper
+    behavior:
+      type: block_item
+      block:
+        state:
+          auto_state: note_block
+          texture: tutorial:block/topaz_block
+        settings:
+          hardness: 4.5
+          sounds:
+            break: minecraft:block.stone.break
+            step: minecraft:block.stone.step
+            place: minecraft:block.stone.place
+            hit: minecraft:block.stone.hit
+            fall: minecraft:block.stone.fall
+          tags:
+            - minecraft:mineable/pickaxe
+```
+
+运行 `/ce reload all` 后再次挖掘：现在使用镐的速度更快，挖掘时也会播放石头音效。
+
+### 新增字段
+
+- `hardness: 4.5` — 方块硬度，数值越大，挖掘时间越长
+- `sounds` — 五种音效：破坏、走过、放置、敲击、摔落。格式 `minecraft:block.方块名.动作`
+- `tags: [minecraft:mineable/pickaxe]` — 将方块标记为适合用镐挖掘，使镐的挖掘速度快于徒手挖掘
+
+## 第 3 步：设置方块掉落物
+
+目前破坏该方块不会掉落任何物品。在 `block:` 下添加 `loot`：
+
+```yaml
+        settings:
+          hardness: 4.5
+          sounds: ...
+          tags:
+            - minecraft:mineable/pickaxe
+        loot:
+          template: default:loot_table/self
+```
+
+运行 `/ce reload all` 后破坏方块，它会掉落一个 `tutorial:topaz_block` 物品。
+
+`default:loot_table/self` 是 CraftEngine 内置的战利品表模板，作用是让方块掉落自身。进阶文档会进一步介绍战利品表；如果不配置此项，方块被破坏后不会掉落物品。
+
+## 第 4 步：背后的原理——视觉方块状态
+
+完成基本配置后，再来了解它的工作原理。
+
+Minecraft 原版可用的方块状态数量固定，无法直接新增。CraftEngine 会复用尚未占用的原版方块状态，并为其覆盖自定义模型。这些状态称为**视觉方块状态**，决定玩家在客户端看到的外观。
+
+`auto_state: note_block` 表示从音符盒状态组中自动分配一个空闲状态，用于显示自定义方块。同一状态组中的方块拥有相同的碰撞箱形状，因此行为保持一致。
+
+常用 `auto_state` group：
+
+| group | 包含的方块 | 碰撞箱形状 | 适合什么 |
+|:---|:---|:---|:---|
+| solid | 音符盒 + 全部蘑菇方块 | 完整立方体 | 1x1x1方块 |
+| tripwire | 绊线 | 薄片 | 农作物、小花、小装饰 |
+| leaves | 树叶 | 完整立方体 | 1x1x1透明方块 |
+
+> 💡 绝大多数完整方块使用 `note_block` 或 `solid` 即可。制作植物或小型装饰时，再考虑其他状态组。
+
+## 第 5 步：选择模型写法
+
+方块模型有三种写法，从简到繁：
+
+**① 一张贴图 → `texture:`**（你刚才用的）
+```yaml
+state:
+  auto_state: note_block
+  texture: tutorial:block/topaz_block
+```
+自动生成六面使用同一贴图的立方体模型。
+
+**② 多张贴图 → `textures:` 列表**
+```yaml
+state:
+  auto_state: note_block
+  model:
+    path: tutorial:block/topaz_block      # 多张时必须指定
+    textures:
+      - tutorial:block/topaz_block_top    # 顶面
+      - tutorial:block/topaz_block_side   # 侧面
+```
+贴图数量决定模型类型：2 张 = 柱形（顶+侧），3 张 = 底面+侧面+顶面。`path` 必须写，告诉插件模型文件放哪。
+
+**③ 自己指定父模型 → `generation`**
+```yaml
+state:
+  auto_state: note_block
+  model:
+    path: tutorial:block/topaz_block
+    generation:
+      parent: minecraft:block/cube_bottom_top
+      textures:
+        bottom: tutorial:block/topaz_block_bottom
+        side: tutorial:block/topaz_block_side
+        top: tutorial:block/topaz_block_top
+```
+需要指定父模型时使用这种写法。`textures` 下的变量名由 `parent` 决定。选定 parent 后，可以前往 [Data Pack Generator](https://misode.github.io/assets/model/) 查看它定义的变量并据此配置。
+
+## 第 6 步：设置物品栏中的外观
+
+目前 `tutorial:topaz_block` 在手中和物品栏里仍显示为纸，因为它使用了 `material: paper`。方块的 `texture:` 已生成 `models/block/topaz_block.json` 模型文件，可以让物品直接引用该模型：
+
+```yaml
+items:
+  tutorial:topaz_block:
+    material: paper
+    model: tutorial:block/topaz_block    # ← 加这一行
+    behavior:
+      type: block_item
+      block: ...
+```
+
+`model: tutorial:block/topaz_block` 会让该物品在物品栏中显示为对应的方块模型。无需重新生成模型，直接复用方块配置已经生成的文件即可。
+
+依次运行 `/ce reload all` 和 `/ce item get tutorial:topaz_block`。此时物品栏中会显示方块外观，而不再是纸。

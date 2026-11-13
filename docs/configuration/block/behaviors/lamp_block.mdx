@@ -1,0 +1,23 @@
+---
+title: 💡 Lamp Block
+id: lamp_block
+---
+
+**Lamp Block** toggles its `lit` state in response to redstone power, just like a vanilla redstone lamp. When a neighbor signal arrives it turns on instantly; when the signal disappears it waits 4 ticks before turning off.
+
+On placement it automatically checks for nearby redstone power and sets the correct initial state.
+
+| Property Name | Property Type | Required |
+|---------------|---------------|----------|
+| lit           | boolean       | yes      |
+
+## Example
+
+```yaml
+blocks:
+  default:copper_coil:
+    behavior:
+      type: lamp_block
+```
+
+![](/img/lamp_block.png)

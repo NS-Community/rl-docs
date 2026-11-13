@@ -1,0 +1,570 @@
+---
+title: 🔧 Item Settings
+id: settings
+---
+
+import Details from '@site/src/components/Details';
+
+## Introduction
+
+Unlike data, the contents within settings pertain to special mechanisms processed by the plugin.
+
+## Types
+
+### fuel_time
+
+Determines how many ticks can be burned.
+
+```yaml
+fuel_time: 100
+```
+
+![](/img/item_settings_1.png)
+
+### break_power
+
+Determines the break power of this item when used as a tool. A block with [`required_break_power`](../block/settings.mdx#required_break_power) can only be effectively mined by tools whose break power is greater than or equal to the required value. (Default: inherit from the item's vanilla material)
+
+```yaml
+break_power: 3
+```
+
+:::info
+The break power of vanilla tools is hardcoded: wood/gold = 1, stone/copper = 2, iron = 3, diamond = 4, netherite = 5, other items = 0. You can override them via `item.break-power` in config.yml.
+:::
+
+### tags
+
+Tags used in recipes.
+
+```yaml
+tags:
+  - "default:palm_logs"
+  - "minecraft:logs"
+  - "minecraft:logs_that_burn"
+```
+
+### equipment
+
+Apply the [equipment](../equipment.mdx) to this item.
+
+![](/img/item_settings_2.png)
+
+```yaml
+equipment:
+  #
+  # Required Argument
+  #
+  asset_id: default:topaz
+  
+  # 
+  # Optional Argument. Defaults to the global client_bound_model option in config.yml
+  #
+  client_bound_model: true
+  
+  #
+  # Optional Arguments on 1.21.2 and above
+  # Option 'slot' is required for these options to work
+  #
+  slot: head # head / chest / legs / feet / body (animal armor) / saddle 
+  # The resource location of the overlay texture to use when equipped. The directory this refers to is assets/<namespace>/textures/<id>.
+  camera_overlay: "namespace:id"
+  # Whether the item can be dispensed by using a dispenser.
+  dispensable: true
+  # Whether this item is damaged when the wearing entity is damaged.
+  damage_on_hurt: true
+  # Whether the item can be equipped into the relevant slot by right-clicking.
+  swappable: true
+  # >= 1.21.5
+  # Whether this item can be equipped onto a target mob by pressing use on it (as long as this item can be equipped on the target at all)
+  equip_on_interact: true
+```
+
+### equipment_lod
+
+Switches the equipment appearance for each viewer based on their distance from the equipped entity. For example, nearby viewers can see a 3D armor model while distant viewers see a simpler 2D armor texture.
+
+```yaml
+items:
+  your_namespace:custom_chestplate:
+    material: iron_chestplate
+    data:
+      equippable:
+        slot: chest
+        asset_id: your_namespace:armor_3d
+    settings:
+      equipment_lod:
+        asset_id: your_namespace:armor_2d
+        distance: 32
+```
+
+### attribute_modifiers
+
+Provides CraftEngine custom attribute modifiers to the holder while the item occupies a matching slot. This system is separate from the vanilla attribute component represented by `data.attribute_modifiers`.
+
+```yaml
+attribute_modifiers:
+  # type: custom attribute ID to modify. Required
+  - type: demo:might
+    # id: unique modifier ID. Required; used for updates, replacement, and removal
+    id: demo:item/war_blade/might
+    # amount: modifier value. Required; accepts fixed numbers, ranges, expressions, and number providers
+    amount: 8
+    # operation: operation ID. Required
+    operation: minecraft:add_value
+    # scope: entity adds to the holder's stats; weapon participates only in weapon calculations. Default: entity
+    scope: entity
+    # slot: effective slot or slot group. Required
+    slot: mainhand
+    # conditions / condition: optional condition list; applies only when every condition passes
+    # conditions: []
+    # update_interval: check interval for dynamic values or conditions, in ticks. Default: 20
+    # update_interval: 20
+```
+
+See [Attribute → Item Attribute Modifiers](../attribute/modifier.mdx) for all slots, scopes, dynamic values, and the random weapon example.
+
+### equipment_potion_effects
+
+Grants potion effects while the item is equipped in a matching slot.
+
+```yaml
+equipment_potion_effects:
+  - slot: head                     # Required equipment slot or slot group
+    type: minecraft:strength       # Potion effect ID
+    amplifier: 2                   # Strength III
+    ambient: true                  # Default: false
+    particles: false               # Default: true
+    show_icon: true                 # Default: true
+    conditions:                    # Optional
+      - type: expression
+        expression: "<arg:player.x> > 1000"
+    update_interval: 20             # Condition check interval in ticks; default: 20
+```
+
+- For the same potion effect type, only the highest level applies. Any replaced external effect is restored with its remaining duration afterward.
+- Built-in slots include `mainhand`, `offhand`, `head`, `chest`, `legs`, `feet`, `body`, and `saddle`. Custom slots can also be registered through the API, allowing accessory plugins to provide these effects.
+- The entity type must be enabled in `entity.tracking` in `config.yml`.
+
+### equipment_set_part
+
+Marks an item as part of an equipment set while it is equipped in one of the specified slots. Set bonuses must be defined separately under `equipment_sets`.
+
+```yaml
+equipment_set_part:
+  # slots: physical slots in which the item counts toward the set. Required
+  - slots:
+      - head
+    # sets: set IDs to which the item belongs in this slot. Required
+    sets:
+      - example:potion_test
+```
+
+An item can belong to multiple sets. `slots` accepts only `mainhand`, `offhand`, `head`, `chest`, `legs`, `feet`, `body`, and `saddle`; slot groups are not accepted. Set tiers do not accumulate, and only the highest satisfied tier applies. See [Attribute → Equipment Sets](../attribute/equipment-set.mdx) for the complete configuration.
+
+### repairable
+
+Decides if the item can be repaired through crafting table/anvil/grindstone. (Default: true)
+
+```yaml
+repairable: true
+
+# Detailed repair configuration (overrides the simple boolean above)
+repairable:
+  crafting_table: true    # combine two of the same item in a crafting table
+  anvil_repair: false     # repair with materials in an anvil
+  anvil_combine: true     # combine two of the same item in an anvil
+  grindstone_repair: true # combine two of the same item in a grindstone
+```
+
+![](/img/item_settings_3.png)
+
+### anvil_repair_item
+
+Configure this on the **repair material** to specify which items it can repair in an anvil and how much durability each material restores. `target` accepts a single ID or a list of IDs, including vanilla items, custom items, and `#tags`. If multiple entries match, the last matching entry is used.
+
+```yaml
+anvil_repair_item:
+  - target: "#topaz_tools" # use tags
+    amount: 20  # restores fixed durability
+  - target:
+      - "minecraft:iron_pickaxe"
+      - "minecraft:shears"
+    percent: 0.25  # 0.25 = 25%, restores n% total durability
+```
+
+`amount` and `percent` default to `0` and can be combined: each material restores `amount + percent × max durability` points of durability, rounded down. Both fields support [number formats](../../reference/number_format.mdx).
+
+### anvil_repair_material
+
+Configure this on the **item being repaired** to specify which materials can repair it in an anvil and how much durability each material restores. Unlike `anvil_repair_item`, this setting also lets you use vanilla repair materials without configuring a custom material item.
+
+```yaml
+anvil_repair_material:
+  - material: "minecraft:diamond"
+    amount: 100
+  - material:
+      - "example:topaz"
+      - "#example:repair_materials"
+    amount: 20
+    percent: 0.25
+```
+
+`material` accepts a single ID or a list of IDs: vanilla item IDs, custom item IDs, or `#tags` (vanilla or custom item tags). `amount` and `percent` use the same formula and number formats as `anvil_repair_item` and default to `0`. In the second entry above, each material restores `20 + 25% of max durability`.
+
+The last matching `anvil_repair_material` entry takes priority. Only when no entry matches does CraftEngine check the material's `anvil_repair_item`; if neither matches, existing anvil handling continues. These entries do not disable other repair methods. Setting `repairable.anvil_repair` to `false` on the item being repaired still prevents material repairs in an anvil.
+
+### drag_repair_item
+
+Configure this on the **repair material** to specify which items it can repair by dragging. Pick up this item with your cursor and drop it onto a damaged item in your inventory to repair it. Left-click repairs as much as possible (consuming as many materials as needed), while right-click consumes only one material at a time. If the target item is fully repaired or neither side has a matching repair rule, the vanilla swap behavior is kept. `target` accepts the same IDs and tags as `anvil_repair_item`, but the first matching `drag_repair_item` entry is used.
+
+```yaml
+drag_repair_item:
+  - target: "#topaz_tools" # use tags
+    amount: 20  # restores fixed durability
+  - target:
+      - "minecraft:iron_pickaxe"
+      - "minecraft:shears"
+    percent: 0.25  # 0.25 = 25%, restores n% total durability
+    sound: minecraft:item.armor.equip_iron # optional; or use the map form below
+#   sound:
+#     id: minecraft:item.armor.equip_iron
+#     volume: 1
+#     pitch: 0.9~1
+```
+
+`amount` and `percent` default to `0` and can be combined: each material restores `amount + percent × max durability` points of durability, rounded down. Both fields support [number formats](../../reference/number_format.mdx).
+
+### drag_repair_material
+
+Configure this on the **item being repaired** to specify which materials can repair it when dragged onto it. The cursor material can be a vanilla item or a custom item.
+
+```yaml
+drag_repair_material:
+  - material: "minecraft:diamond"
+    amount: 100
+  - material:
+      - "example:topaz"
+      - "#example:repair_materials"
+    amount: 20
+    percent: 0.25
+    sound:
+      id: minecraft:item.armor.equip_iron
+      volume: 1
+      pitch: 0.9~1
+```
+
+`material`, `amount`, and `percent` have the same format as `anvil_repair_material`. `sound` is optional and accepts a sound ID or the map form shown above, just like `drag_repair_item`.
+
+The last matching `drag_repair_material` entry takes priority. Only when no entry matches does CraftEngine check the cursor material's `drag_repair_item`, using its first matching entry. Left-click consumes as many materials as needed, and right-click consumes one. If neither side matches, the target has no durability, or it is already fully repaired, the vanilla swap behavior is kept. `repairable` controls crafting table, anvil, and grindstone repairs; it does not control drag repairs.
+
+### renameable
+
+Determines if the item can be renamed in anvil. (Default: true)
+
+```yaml
+renameable: false
+```
+
+### prevent_break
+
+Determines whether the item is prevented from breaking when its durability runs out. (Default: false)
+
+The item keeps its last point of durability instead of being destroyed. An item in this "broken" state can no longer be used: attacking, mining, shooting bows/crossbows and right-click usages (e.g. stripping logs, hoeing dirt, raising a shield) are all blocked until it is repaired. Worn armor is automatically unequipped when it breaks — moved into the player's inventory, or dropped on the ground if the inventory is full.
+
+```yaml
+prevent_break: true
+```
+
+### can_place
+
+Determines whether the vanilla block corresponding to this item's material can be placed. Set it to `false` when you use a block-like material (e.g. `note_block`) as the base for a non-block item, so players can't place it as a block. (Default: false)
+
+```yaml
+can_place: false
+```
+
+### allowed_projectiles
+
+Determines which item can be loaded into crossbows and bows
+
+```yaml
+allowed_projectiles:
+  - gun_world:gun_ammo
+  - minecraft:ender_pearl
+```
+
+### projectile
+
+Creates a custom projectile entity based on the item. It supports `trident`, `arrow`, `snowball` and more.
+
+```yaml
+projectile:
+  display:
+    item: default:topaz_trident # the item to display
+    translation: 0,0,0
+    rotation: 1,1,1,1
+    display_transform: NONE
+    scale: 0.5
+  sounds:
+    throw: minecraft:item.trident.throw
+    hit_entity: minecraft:item.trident.hit
+    hit_block: minecraft:item.trident.hit_ground
+  # Whether to ignore the Infinity enchantment when used as ammunition
+  ignore_infinity_enchantment: false
+  # Whether the projectile can be picked up after hitting a target
+  pickupable: true
+  # Whether to remove the projectile upon impact
+  remove_on_hit: false
+  # Whether the projectile is affected by gravity
+  gravity: true
+  # Projectile velocity
+  velocity: 1
+  # Base damage
+  damage: 10
+  # The number of times this arrow can pierce through an entity
+  pierce_level: 5
+```
+
+:::tip
+
+Any sound configuration supports advanced configuration formats
+
+```yaml
+sounds:
+  throw:
+    id: minecraft:item.trident.throw
+    pitch: 0.9~1
+    volume: 1
+```
+
+`hit_block` and `hit_entity` support changing the sound type based on the hit target.
+
+```yaml
+sounds:
+  hit_block:
+    default: minecraft:item.trident.hit
+    overrides:
+      minecraft:stone: minecraft:item.trident.hit_stone
+      default:palm_log: minecraft:item.trident.hit_log
+```
+
+:::
+
+![](/img/item_settings_4.png)
+
+<Details summary="How to Model">
+  The way you model directly affects the `rotation` arguments in the configuration file.
+
+  No matter which modeling method you use, the most important thing is to make the sharp part of the trident in the position shown in the picture above to ensure the best hitting point.
+
+![](/img/item_settings_6.png)
+![](/img/item_settings_7.png)
+
+</Details>
+
+### dyeable
+
+Decides if the item can be dyed in crafting tables. (Default: undefined)
+
+```yaml
+dyeable: true
+```
+
+![](/img/item_settings_5.png)
+
+### food
+
+Plugin-based alternative implementation for the food component.
+
+```yaml
+food:
+  nutrition: 5  # 0~20, integer
+  saturation: 3.5  # 0~10, float
+```
+
+:::caution
+Better to use food components on a 1.20.5+ server
+:::
+
+### consume_replacement
+
+Set the return item after consuming the item. For example, after the player drinks the water bottle, the empty bottle will be returned. (Default: null)
+
+```yaml
+consume_replacement: minecraft:apple
+```
+
+### craft_remainder / craft_remaining_item
+
+Choose whether items should return other items when the crafting recipe is finished.
+
+Returns a fixed item
+
+```yaml
+craft_remainder: bucket
+```
+
+```yaml
+craft_remainder:
+  type: fixed
+  item: bucket
+  count: 1
+```
+
+Consumes a certain amount of durability
+
+```yaml
+craft_remainder:
+  type: hurt_and_break
+  damage: 1
+```
+
+Select the remaining items according to the recipe
+
+```yaml
+craft_remainder:
+  type: recipe_based
+  terms:
+    - recipes: 
+        - test:test1
+        - test:test3
+      craft_remainder:
+        type: hurt_and_break
+    - recipes: 
+        - test:test2
+      craft_remainder: minecraft:stone
+```
+
+![](/img/item_settings_8.png)
+
+### fuel_remainder
+
+Returned after being consumed as fuel. Only applies to items with a stack size of 1
+
+```yaml
+fuel_remainder: paper
+```
+
+### invulnerable
+
+```yaml
+invulnerable:
+  - lava
+  - fire
+  - fire_tick
+  - block_explosion  # respawn anchor
+  - entity_explosion  # creeper, tnt
+  - lightning
+  - contact  # cactus
+```
+
+![](/img/item_settings_9.png)
+
+### enchantable
+
+This option lets you block certain items from being used on the enchantment table. Tip: setting it to true won’t magically make unenchantable items enchantable. (Default: true)
+
+```yaml
+enchantable: false
+```
+
+### compost_probability
+
+This setting controls how likely it is for composting to succeed (Default: 0.5).
+
+```yaml
+compost_probability: 0.5
+```
+
+### respect_repairable_component
+
+Controls whether the items listed in the `repairable` component can repair this item in the anvil interface. The default is `false` for custom items and `true` for vanilla items.
+
+```yaml
+respect_repairable_component: false
+```
+
+### dye_color
+
+This determines what color it provides in the dyeing recipe.
+
+```yaml
+dye_color: 255,140,0
+```
+
+![](/img/item_settings_10.png)
+
+### firework_color
+
+This determines what color it provides in the firework star fade recipe.
+
+```yaml
+firework_color: 255,140,0
+```
+
+### ingredient_substitute
+
+This determines which vanilla items this item can serve as an equivalent substitute for within the recipe system.
+
+```yaml
+ingredient_substitute:
+  - minecraft:leather
+  - minecraft:paper
+```
+
+![](/img/item_settings_11.png)
+
+### hat_height (require CustomNameplates)
+
+This determines the impact of hat height on nametag height
+
+```yaml
+hat_height: 1.5
+```
+
+### keep_on_death_chance
+
+Determines the probability of keeping this item after death.
+
+```yaml
+keep_on_death_chance: 0.2 # 0~1
+```
+
+### destroy_on_death_chance
+
+Determines the probability of this item being destroyed upon death.
+
+```yaml
+destroy_on_death_chance: 0.5 # 0~1
+```
+
+### drop_display
+
+Used to control whether the names of dropped items are displayed, as well as what content is shown.
+
+```yaml
+drop_display: false  # If globally enabled, can be individually disabled for specific items.
+```
+
+```yaml
+drop_display: true  # Displays the entity name based on the item name.
+```
+
+```yaml
+# Custom display name. <arg:count> represents the quantity, <name> represents the item name.
+drop_display: "<arg:count>x <name>"
+```
+
+![](/img/item_settings_12.png)
+
+### glow_color
+
+Make items glow and display colors.
+
+```yaml
+# black, dark_blue, dark_green, dark_aqua, dark_red, dark_purple, gold, gray, dark_gray, blue, green, aqua, red, light_purple, yellow, white
+glow_color: white
+```
+
+![](/img/item_settings_13.png)

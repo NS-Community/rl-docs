@@ -1,0 +1,29 @@
+---
+title: 🧩 组合
+id: composite
+---
+
+## 概述
+
+将多个子模型**叠加在同一空间中**。模型按列表从后向前渲染，越靠前的条目显示在越上层。
+
+```yaml
+items:
+  demo:gem:
+    material: diamond
+    model:
+      type: minecraft:composite
+      models:
+        - type: minecraft:model
+          path: minecraft:item/custom/gem_glow   # 上层
+        - type: minecraft:model
+          path: minecraft:item/custom/gem_base   # 底层
+```
+
+## 字段
+
+| 字段 | 类型 | 必需 | 默认值 | 说明 |
+|-------|------|----------|---------|-------------|
+| type | string | 是 | — | `minecraft:composite` |
+| models | list | 是 | — | 从后向前依次渲染的物品模型映射 |
+| transformation | object | 否 | — | 物品模型变换，在子节点的变换之上进行（26.1+） |

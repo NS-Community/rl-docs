@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="North">
+  <rect width="64" height="64" rx="15" fill="#1B2430"/>
+  <!-- north star -->
+  <path d="M32 7 L33.6 12.4 L39 14 L33.6 15.6 L32 21 L30.4 15.6 L25 14 L30.4 12.4 Z" fill="#8FB8FF"/>
+  <!-- N wordmark -->
+  <path d="M19 24 H26 L38 44 V24 H45 V49 H38 L26 29 V49 H19 Z" fill="#F5F8FC"/>
+</svg>

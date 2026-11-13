@@ -1,0 +1,80 @@
+---
+title: 📦 安装与托管
+id: installation
+---
+
+import Highlight from '@site/src/components/Highlight';
+import ColoredLink from '@site/src/components/ColoredLink';
+import UrlCard from '@site/src/components/UrlCard';
+import PluginFileTree from '@site/src/components/PluginFileTree';
+
+本章将完成插件安装，并配置资源包分发。
+
+## 要求
+
+CraftEngine 支持以下 Paper 系服务端：
+
+**Paper 及其下游**：Paper、Purpur、Pufferfish、Leaf、Leaves、UniverseSpigot
+
+**Folia 及其下游**：Folia、Canvas、Luminol
+
+:::info
+- **Java：** JDK 21 或更高
+- **Minecraft：** 1.20 或更高
+:::
+
+## 获取插件
+
+- **社区版**<Highlight color="#00AF5C"><ColoredLink to="https://modrinth.com/plugin/craftengine" color="#ffffff">**Modrinth**</ColoredLink></Highlight>
+- **付费版**<Highlight color="#06B6D4"><ColoredLink to="https://voxel.shop/product/7624/craftengine" color="#ffffff">**VoxelShop**</ColoredLink></Highlight>、<Highlight color="#2563EB"><ColoredLink to="https://builtbybit.com/resources/craftengine.82674/" color="#ffffff">**BuiltByBit**</ColoredLink></Highlight>、<Highlight color="#3B0764"><ColoredLink to="https://nmcrate.com/products/craftengine-1" color="#ffffff">**NMCrate**</ColoredLink></Highlight>、<Highlight color="#7C3AED"><ColoredLink to="https://afdian.com/a/xiaomomi" color="#ffffff">**爱发电**</ColoredLink></Highlight>
+
+## 安装
+
+将 `.jar` 文件放入 `plugins/`，然后启动服务器。首次启动后会生成以下内容：
+
+<PluginFileTree
+  title="CraftEngine"
+  initialTreeData={[
+    { id: "generated", name: "generated", hoverText: "生成的 resource_pack.zip 保存在这里", children: [] },
+    { id: "libs", name: "libs", hoverText: "按需加载的运行时依赖，无需手动管理", children: [] },
+    { id: "resources", name: "resources", hoverText: "★ 所有自定义内容都放在这里，每个子文件夹对应一个包", children: [] },
+    { id: "translations", name: "translations", hoverText: "命令反馈与警告的多语言文本", children: [] },
+    { id: "commands.yml", name: "commands.yml", isLeaf: true, hoverText: "命令的启用、权限、别名" },
+    { id: "config.yml", name: "config.yml", isLeaf: true, hoverText: "主配置：托管方式、性能、功能开关" },
+  ]}
+/>
+
+<div style={{ marginBottom: "32px" }}></div>
+
+进入游戏并执行 `/ce`。如果能正常打开物品浏览器，就说明插件安装成功。
+
+## 资源包托管
+
+CraftEngine 会将你的内容生成资源包，供玩家下载。默认配置使用插件内置 HTTP 服务，即 `self` 自托管。
+
+**先测试默认配置**：进入游戏并执行 `/ce reload all`。如果资源包能够正常下载，且没有出现紫黑贴图，就说明托管已经生效。默认配置使用 `self` 模式，由服务器直接通过 HTTP 分发资源包，无需额外设置。
+
+配置方式见[资源包托管](set_up_host)，生成和上传步骤见[工作流](workflows)。
+
+### 更换托管方式
+
+如果默认配置下无法完成资源包的发送，或是你想试试其他方式，可以考虑以下托管方案。如果你想弄明白自托管到底出了什么问题，请进入[自托管页面](set_up_host/self)查看详细配置教程。
+
+<div style={{display: 'flex', flexWrap: 'wrap', margin: '-10px -10px 0 -10px'}}>
+
+<UrlCard url="set_up_host/lobfile" title="📤 Lobfile" subtitle="使用 Lobfile API 密钥上传"/>
+<UrlCard url="set_up_host/mcpacks" title="📤 MCPacks" subtitle="免费托管，无需账号或 API 密钥"/>
+<UrlCard url="set_up_host/s3" title="☁️ S3 / 对象存储" subtitle="Cloudflare R2、腾讯云 COS 等"/>
+<UrlCard url="set_up_host/self" title="🖥️ 自托管" subtitle="服务器自己发，免费"/>
+<UrlCard url="set_up_host/external" title="🔗 外部托管" subtitle="指向你已有的托管"/>
+<UrlCard url="set_up_host/openlist" title="📋 OpenList" subtitle="OpenList 实例分发"/>
+<UrlCard url="set_up_host/onedrive" title="📁 OneDrive" subtitle="OneDrive 分发"/>
+<UrlCard url="set_up_host/gitlab" title="🦊 Gitlab" subtitle="GitLab 仓库分发"/>
+<UrlCard url="set_up_host/dropbox" title="📦 Dropbox" subtitle="Dropbox 分发"/>
+<UrlCard url="workflows" title="⚙️ 导出 ZIP" subtitle="让工作流在 zip 步骤结束"/>
+
+</div>
+
+修改 `resource-pack.packs` 或 `resource-pack.self-host` 后，运行 `/ce reload host` 即可更新托管设置。还需要重新构建资源包时，使用默认工作流的服务器可执行 `/ce reload all`，也可以通过 `/ce workflow [名称]` 执行自己的构建工作流。
+
+> ⚠️ 对于需要 API 密钥的托管方式（如 S3），请通过**环境变量**提供密钥，不要将密钥直接写入 `config.yml`，也不要把含有密钥的配置文件发给不信任的人。

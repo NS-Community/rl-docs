@@ -1,0 +1,144 @@
+---
+title: 🔗 Chain Arguments
+id: chain_arguments
+---
+
+## Introduction
+
+**Chain Arguments** represent a dot-notation syntax (connected by `.`) used to access object-related parameters in a hierarchical manner.
+
+For example, in an interaction event where we can access the player instance, we can retrieve additional parameters through this object.
+
+By chaining property accessors like:
+
+* `player.world` → Gets the player's current world
+* `world.name` → Gets the name of that world
+
+We can combine them into a parameter tag format like `<arg:player.world.name>`. This tag dynamically returns the name of the world the player is currently in.
+
+Both `<arg:path>` and `<viewer_arg:path>` support chain arguments. The first segment is a context key, so the available roots depend on where the text is evaluated. For example, an item may be exposed as `item`, `item_in_hand`, `furniture_item`, `player.main_hand_item`, `player.off_hand_item`, or `entity.item`.
+
+If a value may be unavailable, provide a default with `<arg:path:default>`, such as `<arg:entity.item.id:none>`. A missing value without a default causes an error.
+
+## Objects
+
+### player
+
+| parameter        | type                   | description                      |
+|------------------|------------------------|----------------------------------|
+| x                | double                 | the x coordinate of the player   |
+| y                | double                 | the y coordinate of the player   |
+| z                | double                 | the z coordinate of the player   |
+| pitch            | float                  | the pitch of the player          |
+| yaw              | float                  | the yaw of the player            |
+| position         | [#position](#position) | the position of the player       |
+| block\_x         | int                    | the x coordinate of the player   |
+| block\_y         | int                    | the y coordinate of the player   |
+| block\_z         | int                    | the z coordinate of the player   |
+| food             | int                    | the food level of the player     |
+| saturation       | float                  | the saturation of the player     |
+| name             | string                 | the name of the player           |
+| uuid             | uuid                   | the uuid of the player           |
+| world            | [#world](#world)       | the world where the player is in |
+| is\_sneaking     | boolean                | check the sneak state            |
+| is\_swimming     | boolean                | check the swimming state         |
+| is\_climbing     | boolean                | check the climbing state         |
+| is\_gliding      | boolean                | check the gliding state          |
+| is\_flying       | boolean                | check the fly state              |
+| gamemode         | string                 | the gamemode of the player       |
+| game\_edition    | string                 | the game edition of the player   |
+| main\_hand\_item | [#item](#item)         | the item in main hand            |
+| off\_hand\_item  | [#item](#item)         | the item in off hand             |
+
+### block
+
+| parameter           | type                   | description                                                |
+|---------------------|------------------------|------------------------------------------------------------|
+| x                   | int                    | the x coordinate of the block                              |
+| y                   | int                    | the y coordinate of the block                              |
+| z                   | int                    | the z coordinate of the block                              |
+| block\_x            | int                    | the x coordinate of the block                              |
+| block\_y            | int                    | the y coordinate of the block                              |
+| block\_z            | int                    | the z coordinate of the block                              |
+| custom\_block       | block definition       | the custom block definition; absent for a vanilla block    |
+| custom\_block\_state | block state            | the complete custom block state; absent for a vanilla block |
+| world               | [#world](#world)       | the world where the block is in                            |
+| position            | [#position](#position) | the position of the block                                  |
+
+### world
+
+| parameter | type   | description           |
+|-----------|--------|-----------------------|
+| name      | string | the name of the world |
+| uuid      | uuid   | the uuid of the world |
+| time      | long   | the time of the world |
+
+### entity
+
+| parameter        | type                   | description                      |
+|------------------|------------------------|----------------------------------|
+| x                | double                 | the x coordinate of the entity   |
+| y                | double                 | the y coordinate of the entity   |
+| z                | double                 | the z coordinate of the entity   |
+| pitch            | float                  | the entity's `yRot` value (yaw)  |
+| yaw              | float                  | the entity's `xRot` value (pitch) |
+| block\_x         | int                    | the x coordinate of the entity   |
+| block\_y         | int                    | the y coordinate of the entity   |
+| block\_z         | int                    | the z coordinate of the entity   |
+| name             | string                 | the name of the entity           |
+| uuid             | uuid                   | the uuid of the entity           |
+| world            | [#world](#world)       | the world where the entity is in |
+| position         | [#position](#position) | the position of the entity       |
+| fire\_ticks      | int                    | the entity's remaining fire ticks |
+| speed             | double                 | the magnitude of the entity's current velocity in blocks per tick |
+| health           | double                 | the health of a living entity; `0` for other entities |
+| max\_health      | double                 | the maximum health of a living entity; `0` for other entities |
+| item             | [#item](#item)         | the item of a dropped-item entity; absent otherwise |
+
+### position
+
+| parameter  | type                   | description                                  |
+|------------|------------------------|----------------------------------------------|
+| world      | [#world](#world)       | the world                                    |
+| coordinate | [#position](#position) | the same coordinate-bearing position object  |
+| x          | double                 | the x coordinate                             |
+| y          | double                 | the y coordinate                             |
+| z          | double                 | the z coordinate                             |
+| yaw        | float                  | the position's `xRot` value (pitch)          |
+| pitch      | float                  | the position's `yRot` value (yaw)            |
+| block\_x   | int                    | the floored x coordinate                     |
+| block\_y   | int                    | the floored y coordinate                     |
+| block\_z   | int                    | the floored z coordinate                     |
+| biome      | string                 | the namespaced id of the biome               |
+| block      | [#block](#block)       | the block at the floored coordinates         |
+
+### item
+
+| parameter           | type    | description                                          |
+|---------------------|---------|------------------------------------------------------|
+| id                  | string  | the id of the item                                   |
+| custom\_model\_data | int     | the custom model data of the item                    |
+| is\_custom          | boolean | checks if the item is custom                         |
+| count               | int     | the count of the item                                |
+| is\_block\_item     | boolean | checks if the item is vanilla block item             |
+| random.\<id\>       | double  | the item's rolled random value (see `random_values`) |
+
+### random
+
+| parameter | type   | description                                                                 |
+|-----------|--------|-----------------------------------------------------------------------------|
+| \<id\>    | double | a named random value in the current context; missing ids roll and cache a value from `0` to `1` |
+
+### furniture
+
+| parameter | type                   | description                       |
+|-----------|------------------------|-----------------------------------|
+| id        | string                 | the id of the furniture           |
+| uuid      | uuid                   | the uuid of the furniture         |
+| variant   | string                 | the variant of the furniture      |
+| x         | double                 | the x coordinate of the furniture |
+| y         | double                 | the y coordinate of the furniture |
+| z         | double                 | the z coordinate of the furniture |
+| yaw       | float                  | the yaw of the furniture          |
+| pitch     | float                  | the pitch of the furniture        |
+| position  | [#position](#position) | the position of the furniture     |

@@ -1,0 +1,16 @@
+---
+title: 🌊 Liquid Collision Block Item
+id: liquid_collision_block_item
+---
+
+Like [block_item](block_item.mdx), but allows placement on **liquid surfaces** (water or lava). Use `offset_y` to adjust the placement height relative to the liquid.
+
+```yaml
+items:
+  default:reed:
+    material: paper
+    behavior:
+      type: liquid_collision_block_item
+      offset_y: 1               # Height offset from the liquid surface
+      block: default:reed
+```

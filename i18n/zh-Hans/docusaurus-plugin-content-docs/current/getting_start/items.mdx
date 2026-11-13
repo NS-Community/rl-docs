@@ -1,0 +1,132 @@
+---
+title: 🗡️ 第一个物品
+id: items
+---
+
+上一章使用 `/ce resource create` 创建了 `tutorial` 包。现在来制作第一个自定义物品。
+
+打开上一章创建的 `configuration/items.yml`（如果尚未创建，请返回[认识项目](./project_structure)查看第 2 步），将下面的内容**原样**复制进去。
+
+## 第 1 步：用三行配置创建物品
+
+把下面内容写入 `items.yml`：
+
+```yaml
+items:
+  tutorial:diamond:
+    material: diamond
+```
+
+保存文件，然后在游戏中执行：
+
+```
+/ce reload config
+```
+
+看到绿色的成功提示后，再执行：
+
+```
+/ce item get tutorial:diamond
+```
+
+背包中会出现一颗钻石。🎉 这就是你的第一个自定义物品！
+
+### 逐行说明
+
+- `items:` — 表示接下来要定义物品
+- `tutorial:diamond:` — 物品 ID。`tutorial` 是命名空间（也是本教程的包名），`diamond` 是物品名。冒号后的内容需要缩进
+- `material: diamond` — 以原版钻石为基础材质，因此外观和基础行为与钻石相同，例如无法右键放置、最大堆叠数量为 64
+
+> ⚠️ **新手最常见错误**：缩进不对。YAML 用空格缩进，不能用 Tab 键。第二行比第一行多 2 个空格，第三行比第二行多 2 个空格。如果你用 Tab 键缩进，CraftEngine 会报错。
+
+> ⚠️ **新手第二常见错误**：中英文标点混淆。YAML 配置里的冒号 `:` 必须是英文冒号。中文冒号 `：` 会让配置解析失败。
+
+## 第 2 步：给它一个名字
+
+目前它仍显示为原版名称“钻石”。接下来为它设置自定义名称。将 `items.yml` 改为：
+
+```yaml
+items:
+  tutorial:diamond:
+    material: diamond
+    data:
+      item_name: "<blue>闪亮的钻石"
+      lore:
+        - "<!i><gray>一颗被 CraftEngine 魔法加持的钻石"
+```
+
+保存文件，然后依次运行：
+
+```
+/ce reload config
+/ce item get tutorial:diamond
+```
+
+将鼠标悬停在物品上，可以看到蓝色的名称“闪亮的钻石”，下方还有一行灰色描述。
+
+### 这些新加的内容是什么意思
+
+- `data:` — 定义物品携带的数据，例如名称和描述
+- `item_name:` — 物品的名字。`<blue>` 让文字变成蓝色
+- `lore:` — 物品名称下方的描述文字。`-` 表示列表项，每项对应一行描述
+- `<!i>` — 取消斜体。Minecraft 默认以紫色斜体显示 lore；加上 `<!i>` 后即可恢复正常字体，因此通常需要把它放在每行 lore 的开头
+- `<gray>` — 灰色文字
+
+这些 `<blue>`、`<gray>` 标签属于 **MiniMessage**，通过尖括号标签控制文字的颜色和样式。
+
+### MiniMessage 常用标签
+
+| 你写什么 | 效果 |
+|:---|:---|
+| `<red>` `<blue>` `<green>` `<yellow>` | 基本颜色 |
+| `<#FF8C00>` | 自定义颜色（十六进制） |
+| `<bold>` | 粗体 |
+| `<!i>` | 关掉斜体 |
+| `<underlined>` | 下划线 |
+
+更多格式参考 [MiniMessage 官方文档](https://docs.papermc.io/adventure/minimessage/format/)。
+
+## 第 3 步：让它能被合成
+
+现在只能用指令拿这个物品。我们希望玩家能在工作台里合成它。
+
+仍然使用同一个 `items.yml`，加入 `recipes:` 配置段。文件的完整内容如下：
+
+```yaml
+items:
+  tutorial:diamond:
+    material: diamond
+    data:
+      item_name: "<blue>闪亮的钻石"
+      lore:
+        - "<!i><gray>一颗被 CraftEngine 魔法加持的钻石"
+
+recipes:
+  tutorial:diamond:
+    type: shaped
+    pattern:
+      - "AAA"
+      - "AAA"
+      - "AAA"
+    ingredients:
+      A: minecraft:diamond_block
+    result:
+      id: tutorial:diamond
+      count: 9
+```
+
+**注意**：`recipes:` 与 `items:` 同级，不要将它缩进到 `items:` 中；两者都应顶格书写。
+
+保存文件并运行 `/ce reload recipe`。打开工作台，将一个钻石块放入 3×3 合成栏，即可得到 9 个“闪亮的钻石”。
+
+### 配方配置解释
+
+- `recipes:` — 表示接下来要定义合成配方
+- `type: shaped` — 有序合成，材料必须按指定图案摆放
+- `pattern` — 工作台的 3×3 图案。每行 3 个字符，`A` 代表材料。空格代表留空
+- `ingredients.A: minecraft:diamond_block` — 图案里的 `A` 对应原版钻石块
+- `result` — 合成结果。`id: tutorial:diamond` 指定产物 ID，`count: 9` 表示每次产出 9 个
+
+> ⚠️ 配方里的材料可以用**标签**代替具体物品。比如 `#minecraft:planks` 匹配任意木板。用标签比用具体物品更灵活。
+
+> ⚠️ 修改配方后需要跑 `/ce reload recipe`，不是 `config`。另外如果你的服务器装了别的数据包插件、或者手动跑了 `/minecraft:reload`，之后要**再跑一次** `/ce reload recipe`，否则配方可能失效。

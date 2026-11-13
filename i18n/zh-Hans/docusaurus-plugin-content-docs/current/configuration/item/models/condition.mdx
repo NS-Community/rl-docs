@@ -1,0 +1,115 @@
+---
+title: ⚖️ 布尔条件型
+id: condition
+---
+
+import UrlCard from '@site/src/components/UrlCard';
+
+## 概述
+
+计算指定的**布尔属性**，结果为真时使用 `on_true` 模型，为假时使用 `on_false` 模型。
+
+```yaml
+items:
+  demo:bow:
+    material: bow
+    model:
+      type: minecraft:condition
+      property: minecraft:using_item
+      on_true:
+        type: minecraft:model
+        path: minecraft:item/custom/bow_pull
+      on_false:
+        type: minecraft:model
+        path: minecraft:item/custom/bow
+```
+
+## 字段
+
+| 字段 | 类型 | 必需 | 默认值 | 说明 |
+|-------|------|----------|---------|-------------|
+| type | string | 是 | — | `minecraft:condition` |
+| property | string | 是 | — | 布尔谓词类型（见下方） |
+| on_true | model | 是 | — | 谓词为真时使用的模型 |
+| on_false | model | 是 | — | 谓词为假时使用的模型 |
+| transformation | object | 否 | — | 物品模型变换（26.1+） |
+
+## 谓词
+
+<UrlCard
+  url="https://zh.minecraft.wiki/w/物品模型映射#condition"
+  title="Minecraft Wiki | 条件谓词"
+/>
+
+### 无额外字段
+
+以下谓词只需指定 `property` 名称，无需额外参数。
+
+| 谓词 | 触发条件 |
+|----------|---------------|
+| `minecraft:broken` | 物品即将损坏 |
+| `minecraft:carried` | 物品正在 GUI 槽位间被光标携带 |
+| `minecraft:damaged` | 物品可损坏且已被使用过至少一次 |
+| `minecraft:extended_view` | 玩家按住 Shift 且物品在 GUI 中渲染 |
+| `minecraft:fishing_rod/cast` | 此钓鱼竿已抛出浮漂 |
+| `minecraft:selected` | 物品在快捷栏上被选中 |
+| `minecraft:using_item` | 玩家正在使用此物品（进食、拉弓等） |
+| `minecraft:view_entity` | 上下文实体为本地玩家（或旁观模式下的被旁观实体） |
+| `minecraft:bundle/has_selected_item` | 收纳袋"打开"且有选中物品在 GUI 中可见 |
+
+### minecraft\:component（1.21.5+）
+
+使用数据组件谓词匹配物品组件。
+
+```yaml
+property: minecraft:component
+predicate: minecraft:damage
+value:
+  damage: 0
+```
+
+| 字段 | 类型 | 说明 |
+|-------|------|-------------|
+| predicate | string | 组件谓词类型 |
+| value | varies | 与谓词对应的值结构 |
+
+### minecraft\:has_component
+
+若物品上存在指定组件则返回 `true`。
+
+```yaml
+property: minecraft:has_component
+component: minecraft:enchantments
+ignore_default: false
+```
+
+| 字段 | 类型 | 默认值 | 说明 |
+|-------|------|---------|-------------|
+| component | string | — | 命名空间组件 ID |
+| ignore_default | bool | false | 将具有默认值的组件视为不存在 |
+
+### minecraft\:keybind_down
+
+指定按键被按住时返回 `true`。
+
+```yaml
+property: minecraft:keybind_down
+keybind: key.left
+```
+
+| 字段 | 类型 | 说明 |
+|-------|------|-------------|
+| keybind | string | 按键标识符（如 `key.left`、`key.sprint`） |
+
+### minecraft\:custom_model_data
+
+读取 `minecraft:custom_model_data` 组件中的 `flags` 列表。
+
+```yaml
+property: minecraft:custom_model_data
+index: 0
+```
+
+| 字段 | 类型 | 默认值 | 说明 |
+|-------|------|---------|-------------|
+| index | int | 0 | `flags` 数组中的位置 |

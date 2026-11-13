@@ -1,0 +1,413 @@
+---
+title: 🟰 Item Models
+id: models
+---
+
+import UrlCard from '@site/src/components/UrlCard';
+import Highlight from '@site/src/components/Highlight';
+import Details from '@site/src/components/Details';
+
+## Overview
+
+Since 1.21.4, Minecraft uses **items model definitions** to control which model renders for an item. CraftEngine wraps this into YAML — the `model` field on an item determines everything about how it looks. A model is a tree: each node has a `type`, and types that branch (`condition`, `select`, `range_dispatch`, `composite`) contain child models.
+
+<UrlCard
+  url="https://minecraft.wiki/w/Items_model_definition"
+  title="Minecraft Wiki | Items model definition"
+/>
+
+## Root Fields
+
+These go at the **item level** — siblings of `material`, `model`, `data`, etc. They map to the root of the generated items model definition JSON.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| hand_animation_on_swap | bool | true | Whether the first-person swap animation plays when the held item changes |
+| oversized_in_gui | bool | true | If `true`, disables GUI slot clipping — the model can render larger than the slot |
+| swap_animation_scale | float | 1.0 | Speed multiplier for the swap animation; larger = faster |
+
+```yaml
+items:
+  demo:sword:
+    material: diamond_sword
+    hand_animation_on_swap: false   # No swap animation
+    oversized_in_gui: true          # Allow rendering beyond slot bounds
+    swap_animation_scale: 1.5       # 1.5× swap animation speed
+    model:
+      type: minecraft:model
+      path: minecraft:item/custom/sword
+```
+
+:::tip
+
+`model` can also be written as a single path when you don't need extra fields:
+
+```yaml
+items:
+  demo:sword:
+    material: diamond_sword
+    model: minecraft:item/custom/sword
+```
+
+:::
+
+<Details summary="item_model & custom_model_data" defaultOpen={false}>
+
+`custom_model_data` (pre-1.21.4) and `item_model` (1.21.4+) are two ways Minecraft identifies which model to render for an item. They sit at the item root level — siblings of `material` and `model`. CraftEngine manages both automatically; you rarely need to set them by hand.
+
+### What they do
+
+| Field | Version | Format | How it works |
+|-------|---------|--------|-------------|
+| custom_model_data | All | Integer | Attached to the item stack. The resource pack's model JSON `overrides` list matches this number to a model path. |
+| item_model | 1.21.2+ | Namespaced ID | Points directly to `assets/<ns>/items/<id>.json`. No override lookup needed. |
+
+CraftEngine generates **both** when your resource pack spans the 1.21.4 boundary — modern for 1.21.4+ clients, legacy overrides for older ones.
+
+### When CraftEngine auto-generates them
+
+For a typical item that has `model` or `texture` configured:
+
+- **`custom_model_data`** is auto-allocated if the pack's minimum version is below 1.21.2, or if `always-use-custom-model-data` is enabled. The starting number is controlled by `item.custom-model-data-starting-value` in config.yml (default `10000`).
+- **`item_model`** is auto-generated from the item's ID (`demo:sword` → `item_model: demo:sword`) if the server is 1.21.2+ and the pack's maximum version is 1.21.4+. This happens as long as `custom_model_data` is 0, or if `always-use-item-model` is enabled.
+
+### When to set them manually
+
+```yaml
+items:
+  demo:sword:
+    material: diamond_sword
+    custom_model_data: 10001     # Force a specific number
+    item_model: demo:sword       # Force a specific path
+    model:
+      type: minecraft:model
+      path: minecraft:item/custom/sword
+```
+
+| Scenario | What to set |
+|----------|------------|
+| You need a **specific** CustomModelData number (e.g. another plugin references it) | `custom_model_data: <number>` |
+| You want a **custom** item_model path (instead of auto-generated from ID) | `item_model: <namespace:path>` |
+
+### config.yml settings
+
+| Setting | Default | Effect |
+|---------|---------|--------|
+| item.always-use-item-model | true | Generate `item_model` even when `custom_model_data` is present. Recommended. |
+| item.always-use-custom-model-data | false | Force CustomModelData allocation even for 1.21.2+-only packs. |
+| item.always-generate-model-overrides | false | Force legacy overrides even for 1.21.4+-only packs (useful for Bedrock converters). |
+| item.custom-model-data-starting-value.default | 10000 | First auto-allocated CustomModelData number. |
+| `item.custom-model-data-starting-value.overrides.<material>` | — | Per-material override, e.g. `paper: 20000`. |
+| item.client-bound-model | true | <Highlight color="#f2184eff">Premium</Highlight> Keep CustomModelData and item_model client-side, enabling dynamic updates without affecting existing items. |
+
+:::tip
+For nearly all items, you don't need to set either field. Configure `model` or `texture` and CraftEngine handles the rest.
+:::
+
+</Details>
+
+## Model Types
+
+`type` defaults to `minecraft:model` when omitted. The `minecraft:` prefix is optional.
+
+<UrlCard url="models/model" title="📐 Model" subtitle="Render a single static model file" />
+<UrlCard url="models/composite" title="🧩 Composite" subtitle="Layer multiple models on top of each other" />
+<UrlCard url="models/condition" title="⚖️ Condition" subtitle="Switch between two models based on a boolean property" />
+<UrlCard url="models/select" title="✅ Select" subtitle="Choose a model from multiple cases based on a string/enum property" />
+<UrlCard url="models/range_dispatch" title="📡 Range Dispatch" subtitle="Choose a model based on a numeric property crossing thresholds" />
+<UrlCard url="models/special" title="👻 Special" subtitle="Render a hardcoded special model (head, chest, shield, banner, etc.)" />
+<UrlCard url="models/empty" title="∅ Empty" subtitle="Render nothing at all" />
+<UrlCard url="models/bundle_selected_item" title="📦 Bundle Selected Item" subtitle="Render the selected item inside an open bundle" />
+
+:::tip[Transformation (26.1+)]
+
+`transformation` specifies an extra display transform. Available on all types except `empty` and `bundle/selected_item`.
+
+The decomposed form takes 4 fields. They are applied in this exact order: **right_rotation → scale → left_rotation → translation**.
+
+```yaml
+# Decomposed form
+transformation:
+  right_rotation: 0,0,0,1 # [x, y, z, w] quaternion
+  scale: 1,1,1            # [x, y, z]
+  left_rotation: 0,0,0,1  # [x, y, z, w] quaternion
+  translation: 0,0,0      # [x, y, z]
+  # Rotations also accept axis-angle object:
+  # right_rotation:
+  #   angle: 0.0           # Radians
+  #   axis: 0,1,0          # [x, y, z]
+```
+
+```yaml
+# Matrix (16 floats in row-major order, 4 rows × 4 columns)
+# Equivalent to: T × L × S × R  (same order as decomposed form)
+transformation:
+  - 1,0,0,0   # row 0
+  - 0,1,0,0   # row 1
+  - 0,0,1,0   # row 2
+  - 0,0,0,1   # row 3
+```
+
+:::
+
+## Simplified Models
+
+Writing out a full model definition by hand gets tedious. CraftEngine can figure it out for you — just feed it the textures and pick the right base material. It looks at what you're basing the item on and builds the right model structure behind the scenes.
+
+There are three ways to use this, depending on what you have:
+
+<Details summary="textures only" defaultOpen={false}>
+
+You have the PNGs but no model JSONs. Feed CraftEngine a `texture` (one) or `textures` (list) and it generates the model files automatically, assigning paths for you. This is the most common case — start here unless you have a reason not to.
+
+```yaml
+demo:rod:
+  material: fishing_rod
+  textures:
+    - minecraft:item/custom/rod
+    - minecraft:item/custom/rod_cast
+```
+
+</Details>
+
+<Details summary="models only" defaultOpen={false}>
+
+You already made model JSON files in BlockBench (or elsewhere). Drop the `model` or `models` field with the paths to your JSONs. CraftEngine uses them as-is with no generation. The positional order rules are the same as `textures`.
+
+```yaml
+demo:shield_3d:
+  material: shield
+  models:
+    - minecraft:item/custom/shield_3d            # Idle
+    - minecraft:item/custom/shield_3d_blocking   # Blocking
+```
+
+</Details>
+
+<Details summary="textures + models combined" defaultOpen={false}>
+
+You want CraftEngine to generate the model JSONs, but saved at paths you control — for instance, you reference these paths elsewhere in your config. List `models` for the output location and `textures` for the textures to bake in. Both lists must stay aligned slot-for-slot.
+
+```yaml
+demo:bow:
+  material: bow
+  models:
+    - minecraft:item/custom/my_bow
+    - minecraft:item/custom/my_bow_pulling_0
+    - minecraft:item/custom/my_bow_pulling_1
+    - minecraft:item/custom/my_bow_pulling_2
+  textures:
+    - minecraft:item/custom/my_bow
+    - minecraft:item/custom/my_bow_pulling_0
+    - minecraft:item/custom/my_bow_pulling_1
+    - minecraft:item/custom/my_bow_pulling_2
+```
+
+</Details>
+
+<Details summary="blueprint (Blockbench)" defaultOpen={false}>
+
+If you'd rather model in Blockbench than write JSON, point `blueprint` at one `.bbmodel` file **per model slot** — CraftEngine converts each file into a vanilla model JSON (textures included) and builds the same model tree it would have built from textures.
+
+```yaml
+demo:bow:
+  material: bow
+  blueprint:
+    - bow                   # Idle — <pack>/blueprint/bow.bbmodel
+    - bow_pulling_0         # Pulling 0
+    - bow_pulling_1         # Pulling 1
+    - bow_pulling_2         # Pulling 2
+```
+
+The `.bbmodel` extension is optional, and paths are relative to the `blueprint` folder (sibling of `configuration` and `resourcepack`). Generated model paths default to `item/` plus each file's path relative to the `blueprint` folder; pass `models` (in the same slot order) to pick the output paths yourself:
+
+```yaml
+demo:bow:
+  material: bow
+  blueprint:
+    - bow
+    - bow_pulling_0
+    - bow_pulling_1
+    - bow_pulling_2
+  models:
+    - demo:item/bow
+    - demo:item/bow_pulling_0
+    - demo:item/bow_pulling_1
+    - demo:item/bow_pulling_2
+```
+
+Single-slot materials (`paper`, `diamond_sword`, …) take just one file: `blueprint: rocket`. Embedded textures are exported as PNGs alongside the model; textures referencing existing files keep their original reference. See [Blueprint](models/model.mdx#blueprint-blockbench) for the details.
+
+</Details>
+
+:::tip
+
+**Order matters.** Each slot in the list means something specific, and it changes depending on the material. Get the order wrong and your bow will show the pulled texture when it's idle.
+
+:::
+
+
+### 2D icon or handheld tool
+
+For plain items (`paper`, `diamond`, `gold_ingot`…) the parent is `item/generated`. For tools and weapons (`golden_axe`, `diamond_sword`…) it's `item/handheld`. A single `texture` is all you need.
+
+<Details summary="2D icon" defaultOpen={false}>
+
+```yaml
+demo:icon:
+  material: paper
+  texture: minecraft:item/custom/icon
+```
+
+</Details>
+
+<Details summary="Handheld tool" defaultOpen={false}>
+
+```yaml
+demo:axe:
+  material: golden_axe
+  texture: minecraft:item/custom/axe
+```
+
+</Details>
+
+
+### Fishing rod — 2 slots
+
+Shows the cast model whenever the line has been thrown.
+
+<Details summary="Fishing rod" defaultOpen={false}>
+
+```yaml
+demo:rod:
+  material: fishing_rod
+  textures:
+    - minecraft:item/custom/rod         # Idle
+    - minecraft:item/custom/rod_cast    # Bobber is out
+```
+
+</Details>
+
+### Elytra — 2 slots
+
+Switches to the broken texture when the elytra is about to break.
+
+<Details summary="Elytra" defaultOpen={false}>
+
+```yaml
+demo:elytra:
+  material: elytra
+  textures:
+    - minecraft:item/custom/elytra         # Intact
+    - minecraft:item/custom/elytra_broken  # Broken
+```
+
+</Details>
+
+### Shield — 2 slots
+
+Shields are typically 3D models, so you'll usually use `models` with pre-made JSON files.
+
+<Details summary="Shield" defaultOpen={false}>
+
+```yaml
+demo:shield:
+  material: shield
+  models:
+    - minecraft:item/custom/shield            # Idle
+    - minecraft:item/custom/shield_blocking   # Actively blocking
+```
+
+</Details>
+
+### Spear — 2 slots
+
+Uses one model when the item is sitting in a GUI or on the ground, and a different one when the player is actually holding it.
+
+<Details summary="Spear" defaultOpen={false}>
+
+```yaml
+demo:spear:
+  material: golden_spear
+  textures:
+    - minecraft:item/custom/spear       # GUI, ground, item frame
+    - minecraft:item/custom/spear_hand  # Held in hand
+```
+
+</Details>
+
+### Bow — 4 slots
+
+One idle texture, then three pulling stages that ramp up as you draw the bow back.
+
+<Details summary="Bow" defaultOpen={false}>
+
+```yaml
+demo:bow:
+  material: bow
+  textures:
+    - minecraft:item/custom/bow              # Standby, not being used
+    - minecraft:item/custom/bow_pulling_0    # Just started pulling
+    - minecraft:item/custom/bow_pulling_1    # Mid-pull
+    - minecraft:item/custom/bow_pulling_2    # Fully drawn
+```
+
+</Details>
+
+### Crossbow — 6 slots
+
+The most complex one. Three pull stages like the bow, plus two extra slots for when the crossbow is loaded with an arrow or a firework.
+
+<Details summary="Crossbow" defaultOpen={false}>
+
+```yaml
+demo:crossbow:
+  material: crossbow
+  textures:
+    - minecraft:item/custom/crossbow              # Standby, unloaded
+    - minecraft:item/custom/crossbow_pulling_0    # Start of pull
+    - minecraft:item/custom/crossbow_pulling_1    # Mid-pull
+    - minecraft:item/custom/crossbow_pulling_2    # Fully pulled
+    - minecraft:item/custom/crossbow_arrow        # Loaded with an arrow
+    - minecraft:item/custom/crossbow_firework     # Loaded with a firework
+```
+
+</Details>
+
+
+## Legacy Model
+
+Pre-1.21.4 compatibility. CraftEngine auto-converts modern models to legacy format automatically — you should not need this. If you only target 1.21.4+, skip this entirely.
+
+:::warning
+Not recommended for general use. Only reach for this if the auto-conversion produces incorrect results.
+:::
+
+```yaml
+items:
+  demo:rod:
+    material: fishing_rod
+    model:
+      type: minecraft:condition
+      property: minecraft:fishing_rod/cast
+      on_false:
+        type: minecraft:model
+        path: minecraft:item/custom/rod
+      on_true:
+        type: minecraft:model
+        path: minecraft:item/custom/rod_cast
+    legacy_model:
+      path: minecraft:item/custom/rod
+      generation:
+        parent: minecraft:item/fishing_rod
+        textures:
+          layer0: minecraft:item/custom/rod
+      overrides:
+        - path: minecraft:item/custom/rod_cast
+          predicate:
+            cast: 1
+```
+
+:::tip
+`blueprint` also works in `legacy_model` and each of its `overrides` — a `.bbmodel` file is converted and used as that model, with `path` as the optional output location. See [Blueprint](models/model.mdx#blueprint-blockbench).
+:::

@@ -1,0 +1,70 @@
+---
+title: ⚙️ Furniture Settings
+id: settings
+---
+
+## item
+
+Determines the item that this furniture corresponds to. This is usually used to get the furniture item in creative mode with middle click (1.21.4+). (Default: auto-set to the furniture id)
+
+```yaml
+item: default:test_furniture
+```
+
+## hit_times
+
+This determines how many times the player needs to hit the furniture to destroy it. (Default: 0, meaning the furniture breaks instantly on the first hit)
+
+If a player stops hitting for more than 2 seconds or switches to hitting a different piece of furniture, the hit counter resets.
+
+```yaml
+hit_times: 3
+```
+
+## sounds
+
+Determines the sound of the furniture in various situations (Default: none)
+
+* break    When the player breaks this furniture
+* place    When the player places this furniture
+* hit      When the player hits this furniture
+
+```yaml
+sounds:
+  break: minecraft:block.bamboo_wood.break
+  place: minecraft:block.bamboo_wood.place
+  hit: minecraft:block.bamboo_wood.hit
+```
+
+:::info
+You can configure like this to precisely control the volume and pitch
+
+```yaml
+sounds:
+  break:
+    id: minecraft:block.deepslate.break
+    pitch: 0.5
+    volume: 0.25
+  place: minecraft:block.deepslate.step
+```
+:::
+
+## adventure_mode_breaking
+
+Whether to allow players in adventure mode to break the furniture. (Default: false)
+
+```yaml
+adventure_mode_breaking: true
+```
+
+## correct_tools
+
+Determines the required tools to efficiently break this piece of furniture. (Default: none — any tool or bare hand works)
+
+Values prefixed with `#` are item **tags** (e.g. `#minecraft:axes` matches any axe). Values without `#` are specific **item ids** (e.g. `minecraft:diamond_pickaxe`).
+
+```yaml
+correct_tools:
+  - "#minecraft:axes"
+  - "minecraft:diamond_pickaxe"
+```

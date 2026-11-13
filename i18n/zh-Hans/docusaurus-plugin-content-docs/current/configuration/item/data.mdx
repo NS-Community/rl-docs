@@ -1,0 +1,821 @@
+---
+title: 🔢 物品数据
+id: data
+---
+
+import Highlight from '@site/src/components/Highlight';
+import Details from '@site/src/components/Details';
+import AnnotatedYaml from '@site/src/components/AnnotatedYaml';
+
+## 概述
+
+`data` 设置物品堆叠上的**数据组件**——名称、lore、属性、附魔、食物属性等模型和行为之外的一切。`data` 下的大多数键直接映射到[原版数据组件](https://zh.minecraft.wiki/w/数据组件)，CraftEngine 自动处理跨版本转换。
+
+:::tip
+
+在数据键后追加 `#<id>` 即可多次应用同一个处理器。`#id` 部分在解析时被去除，仅用于让键名唯一：
+
+```yaml
+data:
+  insert_lore#1:
+    position: TAIL
+    lore:
+      - "第一次插入"
+  insert_lore#2:
+    position: HEAD
+    lore:
+      - "第二次插入"
+```
+
+适用于任何数据键：`attribute_modifiers#main`、`attribute_modifiers#bonus`、`lore#static`、`lore#conditional` 等。
+
+:::
+
+## 🎨 外观
+
+### item_name（物品名称）
+
+物品的默认名称，默认存在于所有物品上。与 `custom_name` 不同，此名称不可被铁砧抹除，不带斜体，也不会显示在旗帜标记、物品展示框等特定标签中。别名：`display_name`。
+
+```yaml
+items:
+  demo:sword:
+    data:
+      item_name: "<!i><#FF8C00>Topaz Sword"
+```
+
+### custom_name（自定义名称）
+
+玩家为物品指定的名称，通常通过铁砧设置。显示优先级最高，默认带斜体。
+
+```yaml
+items:
+  demo:sword:
+    data:
+      custom_name: "<!i><#FF8C00>Topaz Sword"
+```
+
+### lore（描述）
+
+物品的描述文本。
+
+```yaml
+items:
+  demo:sword:
+    data:
+      lore:
+        - "好闪亮的剑！"
+```
+
+<Details summary="高级 lore 格式" defaultOpen={false}>
+
+支持条件行、分行文本或基于优先级的排序：
+
+```yaml
+lore:
+  - content: "优先级 2"
+    priority: 2
+    operation: APPEND        # APPEND（默认）| PREPEND
+  - content: "优先级 1"
+    priority: 1
+  - content: "拆分\n此行"
+    split_lines: true
+    conditions:
+      - type: permission
+        permission: craftengine.admin
+```
+
+`priority` 越低越靠前。`operation` 默认为 `APPEND`。
+
+</Details>
+
+### insert_lore（插入描述）
+
+在现有 lore 的指定位置插入行。
+
+```yaml
+items:
+  demo:sword:
+    data:
+      insert_lore:
+        position: AFTER          # HEAD | TAIL | BEFORE | AFTER
+        pattern: "匹配此行"       # BEFORE/AFTER 时使用的正则
+        lore:
+          - content: "<green>插入的行"
+        fallback:                # 可选——未匹配时的回落操作
+          position: TAIL
+          lore:
+            - content: "<red>回落行"
+```
+
+### remove_lore（移除描述）
+
+按正则移除匹配的行。
+
+```yaml
+items:
+  demo:sword:
+    data:
+      remove_lore: "移除此行"
+```
+
+### tooltip_style（工具提示样式 / 1.21.2+）
+
+工具提示背景纹理。
+
+```yaml
+items:
+  demo:sword:
+    data:
+      tooltip_style: minecraft:topaz
+```
+
+### hide_tooltip（隐藏工具提示）
+
+隐藏特定组件的工具提示。封装了原版 `minecraft:tooltip_display`，支持跨版本（原 `HideFlags`）。
+
+```yaml
+items:
+  demo:sword:
+    data:
+      hide_tooltip:
+        - dyed_color
+        - enchantments
+        - attribute_modifiers
+```
+
+### dyed_color（染色）
+
+可染色物品的颜色（皮革盔甲等）。
+
+```yaml
+items:
+  demo:armor:
+    data:
+      dyed_color: 255,128,64
+```
+
+### trim（纹饰）
+
+盔甲纹饰图案和材料。
+
+```yaml
+items:
+  demo:chestplate:
+    data:
+      trim:
+        pattern: eye
+        material: iron
+```
+
+### custom_model_data（自定义模型数据）
+
+:::caution
+`data` 内的 `custom_model_data` 仅设置纯整数，**不会绑定模型**。要关联模型定义，请在[物品根级](models#根字段)配置。
+:::
+
+```yaml
+# 在 data 内——设置组件，不绑定模型
+items:
+  demo:sword:
+    data:
+      custom_model_data: 10001
+
+# 在物品根级——设置组件并绑定模型定义
+items:
+  demo:sword:
+    custom_model_data: 10001
+```
+
+### item_model（物品模型 / 1.21.2+）
+
+:::caution
+`data` 内的 `item_model` 仅设置组件值，**不会生成模型**。要关联模型定义并触发生成，请在[物品根级](models#根字段)配置。
+:::
+
+```yaml
+# 在 data 内——设置组件，不生成模型
+items:
+  demo:sword:
+    data:
+      item_model: default:sword
+
+# 在物品根级——设置组件并触发生成
+items:
+  demo:sword:
+    item_model: default:sword
+```
+
+### profile（玩家档案）
+
+设置玩家头颅皮肤。支持字符串（自动检测为名称、URL 或 base64）或 map 形式。
+
+```yaml
+# 按玩家名称
+profile: XiaoMoMi
+
+# 按纹理 URL
+profile: http://textures.minecraft.net/texture/ed83db5c...
+
+# 按 Base64
+profile: eyJ0ZXh0dXJlcyI6...
+
+# Map 形式（1.20.5+）
+profile:
+  name: XiaoMoMi       # 玩家名称
+  # texture: minecraft:entity/player/slim/alex  # 资源包纹理路径
+  # url: https://...    # 纹理 URL
+  # base64: eyJ0ZXh...  # Base64 编码纹理
+```
+
+## ⚡ 行为
+
+### food（食物 / 1.20.5+）
+
+设置物品被消耗时应用的食物属性。物品还需要 `consumable` 组件才可食用。
+
+```yaml
+items:
+  demo:apple:
+    material: apple
+    data:
+      food:
+        nutrition: 5
+        saturation: 3.5
+        can_always_eat: false
+```
+
+### equippable（可装备 / 1.21.2+）
+
+使物品可穿戴在装备槽位中。
+
+```yaml
+items:
+  demo:helmet:
+    data:
+      equippable:
+        slot: head
+        asset_id: minecraft:topaz
+        swappable: true
+        damage_on_hurt: true
+        dispensable: false
+```
+
+| 字段 | 类型 | 说明 |
+|-------|------|-------------|
+| slot | string | head / chest / legs / feet / body / mainhand / offhand / saddle |
+| asset_id | 资源路径 | 装备模型，位于 `assets/<ns>/equipment/<id>.json` |
+| camera_overlay | 资源路径 | 叠加纹理，位于 `assets/<ns>/textures/<id>` |
+| swappable | bool | 可通过右键装备 |
+| damage_on_hurt | bool | 穿戴者受伤时消耗耐久 |
+| dispensable | bool | 可通过发射器装备 |
+| equip_on_interact | bool | （1.21.5+）可通过对生物使用来装备 |
+
+### use_remainder（使用剩余物 / 1.21.2+）
+
+物品堆叠数量在使用后减少时，将其替换为指定的剩余物。
+
+```yaml
+items:
+  demo:cooked_chicken:
+    data:
+      use_remainder:
+        id: default:chicken_bone
+        count: 1               # 可选，默认 1
+```
+
+### unbreakable（不可损坏）
+
+```yaml
+items:
+  demo:sword:
+    data:
+      unbreakable: true
+```
+
+### max_damage（最大耐久 / 1.20.5+）
+
+物品的最大耐久度。
+
+```yaml
+items:
+  demo:sword:
+    material: wooden_sword
+    data:
+      max_damage: 100
+```
+
+### attribute_modifiers（属性修饰符）
+
+为物品应用[属性修饰符](https://zh.minecraft.wiki/w/属性#修饰符)。别名：`attributes`。
+
+```yaml
+items:
+  demo:sword:
+    data:
+      attribute_modifiers:
+        - type: attack_speed
+          amount: 1.0
+          operation: add_value
+          id: namespace:custom_attribute   # 可选
+          slot: mainhand
+```
+
+### enchantment（附魔）
+
+```yaml
+items:
+  demo:sword:
+    data:
+      enchantment:
+        minecraft:sharpness: 3
+```
+
+<Details summary="与已有附魔合并" defaultOpen={false}>
+
+```yaml
+enchantment:
+  merge: true
+  enchantments:
+    minecraft:sharpness: 3
+```
+
+</Details>
+
+### painting_variant（画作变体）
+
+```yaml
+items:
+  demo:painting:
+    data:
+      painting_variant: default:painting_custom
+```
+
+### jukebox_playable（唱片机曲目 / 1.21+）
+
+此物品放入唱片机时播放的唱片机曲目。
+
+```yaml
+items:
+  demo:music_stick:
+    material: stick
+    data:
+      jukebox_playable: default:credits_music
+```
+
+### block_state（方块状态）
+
+放置此物品为方块时应用的方块状态属性。同时能改善高延迟玩家的放置体验。别名：`blockstate`。
+
+<Details summary="block_state 示例" defaultOpen={false}>
+
+```yaml
+# 使用详细的原版方块属性
+items:
+  demo:sofa:
+    material: note_block
+    data:
+      block_state:
+        note: "1"
+        powered: "false"
+        instrument: "harp"
+```
+
+```yaml
+# 简写——从已定义的自定义方块复制方块状态
+items:
+  demo:sapling:
+    material: oak_sapling
+    data:
+      block_state: default:palm_sapling[stage=0]
+```
+
+:::tip
+材质必须在视觉上与方块状态匹配。方块类物品应使用 `note_block` 或 `mushroom_stem` 等，而非 `paper`。
+
+如果你有 premium 版本，可以使用 `client_bound_material` + `client_bound_data.block_state` 来改善客户端体验，同时保留原有的服务端材质：
+
+<AnnotatedYaml>
+{`
+items:
+    default:palm_planks:
+      material: nether_brick
+      data:
+        item_name: <!i><i18n:item.palm_planks>
++   client_bound_material: mushroom_stem
++   client_bound_data:
++     block_state: default:palm_planks
+      settings:
+        fuel_time: 300
+        tags:
+          - minecraft:planks
+          - minecraft:wooden_tool_materials
+      model: minecraft:block/custom/palm_planks
+      behavior:
+        type: block_item
+        block:
+          settings:
+            template: default:settings/planks
+          loot:
+            template: default:loot_table/self
+          state:
+-         auto_state: solid
++         auto_state: mushroom_stem
+            texture: minecraft:block/custom/palm_planks
+`}
+</AnnotatedYaml>
+
+:::
+
+</Details>
+
+## 💾 存储数据
+
+### pdc（持久数据容器）
+
+存储自定义键值数据供其他插件读取。
+
+```yaml
+items:
+  demo:sword:
+    data:
+      pdc:
+        key: "value"
+        number: 42
+        list:
+          - 1
+          - 2
+```
+
+### tags / nbt（标签 / NBT）
+
+底层 NBT 访问。在物品上设置任意 NBT 标签。对键名使用 `@` 前缀可展平嵌套结构。
+
+```yaml
+items:
+  demo:sword:
+    data:
+      tags:
+        CustomTag: "value"
+        "@nested.path": 42
+```
+
+### written_book_content（成书内容 / 1.20.5+）
+
+设置成书的内容——标题、作者、版本与页面。需要物品材质为 `written_book`（成书）。
+
+```yaml
+items:
+  demo:guide_book:
+    material: written_book
+    data:
+      written_book_content:
+        title: "生存指南"             # 字符串简写形式
+        author: XiaoMoMi
+        generation: 0                 # 0 原著，1 原稿的副本，2 副本的副本，3 破烂不堪
+        resolved: false               # 文本是否已解析
+        pages:
+          - "单行页面"
+          - - "第一行"
+            - "第二行"
+          - raw: "<red>高级页面"
+            filtered: "过滤后的页面"   # 对象形式，可选启用聊天过滤的版本
+```
+
+`title` 同样支持 `raw` / `filtered` 对象形式。文本支持 MiniMessage 格式，`<arg:...>` 占位符会基于构建上下文（如查看物品的玩家）解析。
+
+### random_values（随机值）
+
+在构建物品时生成随机值，并将其持久化到物品上。已有的随机值会被保留，重新构建或更新物品时不会再次生成。每个条目都支持任意[数字格式](../../reference/number_format.mdx)写法。
+
+```yaml
+items:
+  demo:sword:
+    data:
+      random_values:
+        attack: 5~10
+        crit:
+          type: triangle
+          min: 0
+          max: 100
+          mode: 80
+```
+
+随机生成的值可以在物品作为上下文参数的任何位置通过链式参数读取，例如 `<arg:item_in_hand.random.attack>`；也可以在动态属性修饰符的数值表达式中使用 `item.random.attack` 引用。
+
+### function（执行函数）
+
+在构建物品时执行一个或多个[通用函数](../../reference/functions.mdx)。这个处理器本身不会添加物品组件，主要用于提前准备 context 变量，让后续物品处理器复用。列表推荐使用 `functions`；只有一个函数时，也可以使用别名 `function`。
+
+处理器按照 YAML 中的顺序运行，并共享同一个物品构建上下文。请将 `functions` 放在它需要读取的数据之后、所有使用变量的处理器之前。变量只在本次构建流程中有效：如果读取变量的名称或 lore 位于 `client_bound_data`，对应的 `functions` 也必须放进 `client_bound_data`。
+
+下面的物品会在服务端保存三个相互独立的 `0~1` 属性随机值。物品发送给玩家时，函数处理器根据不同权重计算武器评分，并且只把最终结果提供给客户端侧 lore：
+
+```yaml
+items:
+  demo:rolled_blade:
+    material: iron_sword
+    data:
+      # 随机值存储在服务端物品上，重新构建物品时不会重新生成。
+      random_values:
+        damage_roll: 0~1
+        speed_roll: 0~1
+        durability_roll: 0~1
+
+    client_bound_data:
+      # 伤害占 50%，攻速占 30%，耐久占 20%，最终得到 0~100 分。
+      functions:
+        - type: set_variable
+          name: score
+          value_type: int
+          value: "ROUND(<arg:item.random.damage_roll> * 50 + <arg:item.random.speed_roll> * 30 + <arg:item.random.durability_roll> * 20)"
+
+      insert_lore:
+        position: TAIL
+        lore:
+          - "<!i><gray>武器评分：<gold><var:score>"
+```
+
+三个权重之和为 `100`，因此 `ROUND(...)` 会把加权结果转换为 `0~100` 的整数评分。`client_bound_data` 内部的顺序不可颠倒：`functions` 必须先于 `insert_lore` 执行，而且两者必须位于同一个配置段中，才能共享同一份 context。`position: TAIL` 会把评分拼接到已有 lore 的尾部。支持的变量类型见 [`set_variable`](../../reference/functions.mdx#设置变量)。
+
+## 📦 外部数据
+
+继承其他插件物品的数据。
+
+```yaml
+items:
+  default:example_item:
+    data:
+      external:
+        plugin: neigeitems       # 或 "source"
+        id: example_item
+```
+
+支持的插件见[外部物品来源](../../compatibility/external_item_sources.mdx)。
+
+## 🧩 自定义组件（1.20.5+）
+
+你自己的组件——不由 CraftEngine 维护或进行版本检查。格式可能随 Minecraft 更新而变动。完整组件参考见 Minecraft Wiki 上的[数据组件](https://zh.minecraft.wiki/w/数据组件)。
+
+### 组件
+
+:::tip[从现有物品复制组件]
+
+手持源物品并运行 [`/ce debug item-component [组件] [json/snbt]`](../../reference/commands.mdx#debug-item-component)。点击结果将其复制，然后把完整的 `(json) ...` 或 `(snbt) ...` 字符串直接作为该组件的值。请保留格式前缀。
+
+:::
+
+<Details summary="按难度排序的示例" defaultOpen={false}>
+
+**★ max_damage**
+
+![](/img/item_data_1.png)
+
+```yaml
+components:
+  minecraft:max_damage: 128
+```
+
+**★★ food**
+
+![](/img/item_data_2.png)
+
+```yaml
+components:
+  minecraft:food:
+    nutrition: 4
+    saturation: 2.0
+    can_always_eat: false
+```
+
+**★★ block_state**
+
+![](/img/item_data_3.png)
+
+```yaml
+components:
+  minecraft:block_state:
+    distance: '1'
+    persistent: 'false'
+```
+
+**★★★ instrument**
+
+![](/img/item_data_4.png)
+
+```yaml
+components:
+  minecraft:instrument: "seek_goat_horn"
+```
+
+```yaml
+components:
+  minecraft:instrument:
+    description:
+      text: "自定义乐器"
+      color: "red"
+    sound_event: minecraft:block.note_block.bell
+    use_duration: 1
+    range: 16
+```
+
+**★★★★ fireworks**
+
+![](/img/item_data_5.png)
+
+```yaml
+components:
+  minecraft:fireworks:
+    flight_duration: 3
+    explosions:
+      - shape: small_ball
+        colors: [11223344]
+        fade_colors: [0]
+        has_trail: true
+        has_twinkle: true
+```
+
+</Details>
+
+:::tip
+
+组件仅需存在（无需值）时：
+
+```yaml
+components:
+  minecraft:unbreakable: {}
+```
+
+:::
+
+### 移除组件
+
+```yaml
+items:
+  demo:item:
+    data:
+      remove_components:
+        - minecraft:equippable
+```
+
+## 🔀 条件数据
+
+<Highlight color="#f2184eff">**付费版专属**</Highlight>
+
+基于条件的不同数据。
+
+```yaml
+items:
+  demo:mythic_sword:
+    client_bound_data:
+      conditional#1:
+        conditions:
+          - type: permission
+            permission: item.unlock
+        data:
+          item_name: "Mythic Sword"
+          lore:
+            - "A blade forged in fallen stars"
+      conditional#2:
+        conditions:
+          - type: "!permission"
+            permission: item.unlock
+        data:
+          item_name: "???? Sword"
+```
+
+## 📡 客户端绑定数据
+
+<Highlight color="#f2184eff">**付费版专属**</Highlight>
+
+### 是什么
+
+平时你在 `data` 里写的东西，全都刻在服务端的 `ItemStack` 上——所有人看到的都一样，别的插件扫物品也能读到这些组件。
+
+`client_bound_data` 则把纯展示用的数据搬到客户端去。这些数据不存服务端，而是通过网络包发给玩家，在渲染那一刻才解析。服务端的物品干干净净，不同玩家还能看到不同的东西。
+
+### 怎么用
+
+把数据拆成两份：服务端需要的搁 `data`，给玩家看的搁 `client_bound_data`。`data` 的所有键这里都能用——`item_name`、`lore`、`custom_model_data`、`item_model`、`components`，哪个都行。
+
+比如这把剑，玩家有没有解锁，看到的名字和描述完全不一样：
+
+```yaml
+items:
+  demo:mythic_sword:
+    material: diamond_sword
+    data:
+      item_name: "<!i><#FF8C00>Mythic Sword"
+    client_bound_data:
+      conditional#unlocked:
+        conditions:
+          - type: permission
+            permission: item.mythic_sword.unlock
+        data:
+          item_name: "<!i><#FF8C00>Mythic Sword"
+          lore:
+            - "<green>已解锁"
+            - "<gray>等级 <arg:player.level>"
+      conditional#locked:
+        conditions:
+          - type: "!permission"
+            permission: item.mythic_sword.unlock
+        data:
+          item_name: "<!i><gray>???? Sword"
+          lore:
+            - "<red>已锁定"
+            - "<gray>需要等级 30"
+```
+
+有权限的玩家看到金色名称和其当前等级。其他玩家看到 "???? Sword" 和锁定提示。两人看的是同一个 `ItemStack`。
+
+### 为什么要用
+
+**按玩家动态显示。** 未使用 `client_bound_data` 时，同一物品对所有玩家显示相同内容；启用后，可以根据解锁状态、个人属性或倒计时，为每名玩家生成不同的客户端显示。
+
+**性能更好。** 服务端的物品不再扛着大段大段的描述文本。好处有三：
+
+- **加快 `getItemMeta` 调用。** 其他插件读取物品信息时，无需反序列化仅用于客户端显示的组件。
+- **降低内存占用。** 即使容器中存有大量物品，服务端也只需保留精简数据，复杂的描述内容由渲染层处理。
+- **降低区块加载开销。** lore 等展示数据仅在发送给玩家时于 Netty 线程序列化；区块加载阶段只需读取少量物品数据。
+
+### client_bound_material（客户端绑定材质）
+
+更改客户端看到的**视觉**材质，同时保持服务端材质不变。
+
+```yaml
+items:
+  demo:palm_planks:
+    material: nether_brick
+    client_bound_material: mushroom_stem
+    client_bound_data:
+      block_state: default:palm_planks
+```
+
+适用于服务端材质必须与视觉材质不同的场景——例如以 `nether_brick` 为基础物品，而客户端渲染绑定到 `mushroom_stem` 的自定义方块模型。
+
+### 可覆盖变体
+
+这些仅在物品尚未拥有对应数据时才生效——允许其他插件设置自己的值而不被覆盖。
+
+```yaml
+# lore——仅在没有 lore 时显示
+overwritable_lore:
+  - "默认描述"
+
+# item_name——仅在没有自定义名称时显示
+overwritable_item_name: "<!i><#FF8C00>默认名称"
+
+# item_model（1.21.2+）——仅在没有模型时设置
+overwritable_item_model: default:sword
+
+# custom_model_data——仅在没有 CustomModelData 时设置
+overwritable_custom_model_data: 10001
+```
+
+:::danger
+
+此功能改变了物品数据在服务端和客户端之间的流转方式。它适用于精心筛选插件生态并有独立排错能力的服务器。
+
+- **插件兼容性。** 通过读取服务端名称或模型值来识别物品的插件可能无法识别使用 `client_bound_data` 的物品。必要时在 `data` 中添加一组最小的真实组件与仅客户端的数据并存。
+- **数据包冲突。** 其他通过数据包修改物品的插件可能意外剥离或损坏客户端组件。这可能导致物品粘滞在光标上（出现视觉复制）或组件永久残留在物品上。
+- **Paper 混淆。** 若使用 Paper 的 `enable-item-obfuscation`，需在 `paper-global.yml` 中将 `minecraft:custom_data` 添加到 `dont-obfuscate`。
+
+:::
+
+## 🌐 覆写原版物品数据（1.20.5+）
+
+`override_data` 的格式和处理器与 `data` 完全相同，但处理结果会写入原版物品的默认原型。此选项仅对原版物品 ID 生效。
+
+这个功能适合移除会干扰自定义系统的原版组件。例如，移除钻石胸甲自带的属性修饰符后，原版护甲值与盔甲韧性便不会再影响自定义属性系统：
+
+```yaml
+items:
+  minecraft:diamond_chestplate:
+    override_data:
+      remove_components:
+        - minecraft:attribute_modifiers
+
+    # 建议：发给客户端时也移除同一组件
+    client_bound_data:
+      remove_components:
+        - minecraft:attribute_modifiers
+```
+
+:::warning
+
+`override_data` 对原版物品默认原型的修改只发生在服务端，不会同步到客户端。不配合 [`client_bound_data`](#-客户端绑定数据) 时，服务端可能已经移除组件，客户端却仍显示原版属性或提示文本。条件允许时，建议用 `client_bound_data` 同步处理客户端可见的数据。
+
+:::
+
+除了移除组件，也可以覆写组件内容。下面修改胡萝卜的默认食物数据：
+
+```yaml
+items:
+  minecraft:carrot:
+    override_data:
+      food:
+        nutrition: 20
+        saturation: 20
+        can_always_eat: false
+```

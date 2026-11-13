@@ -1,0 +1,578 @@
+---
+title: 🔧 物品设置
+id: settings
+---
+
+import Details from '@site/src/components/Details';
+
+## 简介
+
+与 data 不同，settings 中的内容涉及由插件处理的特殊机制。
+
+## 类型
+
+### fuel_time（烧炼时间）
+
+控制物品可燃烧的时间（或称燃料热值）。
+
+```yaml
+fuel_time: 100 # 单位：刻
+```
+
+![](/img/i18n/zh-Hans/item_settings_1.png)
+
+### break_power（破坏力）
+
+决定了此物品作为工具时的破坏力。带有 [`required_break_power`](../block/settings.mdx#所需破坏力) 的方块只能被破坏力大于或等于需求值的工具有效挖掘。（默认值：继承物品原版材质的破坏力）
+
+```yaml
+break_power: 3
+```
+
+:::info
+原版工具的破坏力是写死的：木/金 = 1、石/铜 = 2、铁 = 3、钻石 = 4、下界合金 = 5，其余物品 = 0。你可以在 config.yml 中通过 `item.break-power` 覆写。
+:::
+
+### tags（标签）
+
+使用命令测试物品时，可以通过 `#<命名空间ID>` 引用标签；配方中也支持相同写法。只要物品匹配标签中的任意条目，测试就会通过。
+
+```yaml
+tags:
+  - "default:palm_logs"
+  - "minecraft:logs"
+  - "minecraft:logs_that_burn"
+```
+
+### equipment（装备）
+
+将[装备](../equipment.mdx)应用于此物品。
+
+![](/img/item_settings_2.png)
+
+```yaml
+equipment:
+  #
+  # 必填参数
+  #
+  asset_id: default:topaz
+  
+  # 
+  # 可选参数。默认为 config.yml 中的全局 client_bound_model 选项。
+  #
+  client_bound_model: true
+  
+  #
+  # 1.21.2 及以上版本的可选参数
+  # 这些选项需要指定 'slot' 选项才能生效
+  #
+  slot: head # head / chest / legs / feet / body (animal armor) / saddle
+             # 头盔 / 胸甲  / 护腿  / 靴子 / 身体（动物盔甲）      / 鞍
+  # 当此项存在且物品被玩家穿戴时，玩家第一人称视角将渲染指定的纹理遮罩。
+  # 此遮罩可以使用多个设置此标签的物品互相叠加，每个物品指定的遮罩都会被渲染，
+  # 且渲染顺序按照主手、副手、头盔、胸甲、护腿、靴子、身体、鞍的顺序依次叠加渲染。
+  # 遮罩贴图会作为独立贴图渲染，不能用作动态贴图或 GUI 贴图，但可以指定贴图过滤方式。
+  # 此处的目录指的是 assets/<命名空间>/textures/<路径>
+  # 命名空间 ID 不能包含中文
+  camera_overlay: 命名空间:路径
+  # 是否可以使用发射器使生物穿戴此物品。如果物品本身有特殊的发射器行为则此项无效。
+  dispensable: true
+  # 生物在受到会影响损害盔甲的伤害时此物品是否会受损而减少耐久。
+  damage_on_hurt: true
+  # 物品是否可以直接使用穿戴。
+  swappable: true
+  # >= 1.21.5
+  # 对生物使用此物品时，是否可以让被交互的生物在允许的空槽位上穿戴此物品。
+  equip_on_interact: true
+```
+
+### equipment_lod（装备距离回退）
+
+根据观察者与装备实体之间的距离切换装备外观。例如，近处显示 3D 盔甲，远处显示更简单的 2D 盔甲贴图。
+
+```yaml
+items:
+  your_namespace:custom_chestplate:
+    material: iron_chestplate
+    data:
+      equippable:
+        slot: chest
+        asset_id: your_namespace:armor_3d
+    settings:
+      equipment_lod:
+        asset_id: your_namespace:armor_2d
+        distance: 32
+```
+
+### attribute_modifiers（自定义属性修饰符）
+
+物品位于匹配槽位时，为持有者提供 CraftEngine 自定义属性修饰符。它与 `data.attribute_modifiers` 对应的原版属性组件不是同一套系统。
+
+```yaml
+attribute_modifiers:
+  # type：要修改的自定义属性 ID，必填
+  - type: demo:might
+    # id：修饰符唯一 ID，必填；用于更新、覆盖和移除
+    id: demo:item/war_blade/might
+    # amount：修饰量，必填；支持固定数字、范围、表达式和数字提供器
+    amount: 8
+    # operation：运算方式 ID，必填
+    operation: minecraft:add_value
+    # scope：entity 会加入持有者面板，weapon 只参与武器结算；默认 entity
+    scope: entity
+    # slot：生效槽位或槽位组，必填
+    slot: mainhand
+    # conditions / condition：可选条件列表；全部满足时才生效
+    # conditions: []
+    # update_interval：动态数值或条件的检查周期，单位为刻；默认 20
+    # update_interval: 20
+```
+
+完整的槽位、作用域、动态数值及随机武器示例见[属性 → 物品修饰符](../attribute/modifier.mdx)。
+
+### equipment_potion_effects（装备药水效果）
+
+物品装备在匹配的槽位时，为实体提供药水效果。
+
+```yaml
+equipment_potion_effects:
+  - slot: head                     # 必填，装备槽位或槽位组
+    type: minecraft:strength       # 药水效果 ID
+    amplifier: 2                   # 力量 III
+    ambient: true                  # 默认 false
+    particles: false               # 默认 true
+    show_icon: true                 # 默认 true
+    conditions:                    # 可选条件
+      - type: expression
+        expression: "<arg:player.x> > 1000"
+    update_interval: 20             # 条件检查间隔，单位为刻，默认 20
+```
+
+- 同类型药水效果只生效最高等级；被覆盖的外部效果会按剩余时间还原。
+- 内置槽位包括 `mainhand`、`offhand`、`head`、`chest`、`legs`、`feet`、`body` 和 `saddle`。也可以通过 API 注册自定义槽位，让饰品插件等提供效果。
+- 实体类型必须在 `config.yml` 的 `entity.tracking` 中启用。
+
+### equipment_set_part（装备套装部件）
+
+物品装备在指定槽位时，将其计为对应套装的一个部件。套装奖励需另外在 `equipment_sets` 中定义。
+
+```yaml
+equipment_set_part:
+  # slots：计入套装件数的实际槽位列表，必填
+  - slots:
+      - head
+    # sets：物品在该槽位归属的套装 ID 列表，必填
+    sets:
+      - example:potion_test
+```
+
+一个物品可以属于多个套装。`slots` 只接受 `mainhand`、`offhand`、`head`、`chest`、`legs`、`feet`、`body` 和 `saddle`，不接受槽位组。套装档位不累加，只生效已满足的最高档位。完整配置见[属性 → 装备套装](../attribute/equipment-set.mdx)。
+
+### repairable（可修复）
+
+控制物品是否可以通过工作台、铁砧或砂轮修复。（默认值：true）
+
+```yaml
+# 简单的总开关
+repairable: true
+
+# 或者设定具体修复场景
+repairable:
+  crafting_table: true    # 在工作台中合并两个相同物品
+  anvil_repair: false     # 在铁砧中使用材料修复
+  anvil_combine: true     # 在铁砧中合并两个相同物品
+  grindstone_repair: true # 在砂轮中合并两个相同物品
+```
+
+![](/img/i18n/zh-Hans/item_settings_3.png)
+
+### anvil_repair_item（铁砧材料修复）
+
+配置在**修复材料**的物品设置中，指定此材料可以在铁砧中修复哪些物品，以及每个材料恢复的耐久度。`target` 支持单个 ID 或列表，可填写原版物品 ID、自定义物品 ID 或 `#标签`。同一列表有多条匹配时，使用最后一条。
+
+```yaml
+anvil_repair_item:
+  - target: "#topaz_tools" # 使用标签
+    amount: 20  # 指定恢复耐久度
+  - target:
+      - "minecraft:iron_pickaxe"
+      - "minecraft:shears"
+    percent: 0.25  # 0.25 = 25%, 恢复 n% 总耐久度
+```
+
+`amount` 与 `percent` 默认均为 `0`，可同时使用：每个材料恢复 `amount + percent × 最大耐久` 点耐久度，结果向下取整。两个字段都支持[数字格式](../../reference/number_format.mdx)。
+
+### anvil_repair_material（铁砧反向修复）
+
+配置在**被修复物品**的物品设置中，指定哪些材料可以在铁砧中修复此物品，以及每个材料恢复的耐久度。与 `anvil_repair_item` 相比，此设置也可以直接使用原版物品作为材料，无需为材料创建自定义物品配置。
+
+```yaml
+anvil_repair_material:
+  - material: "minecraft:diamond"
+    amount: 100
+  - material:
+      - "example:topaz"
+      - "#example:repair_materials"
+    amount: 20
+    percent: 0.25
+```
+
+`material` 支持单个 ID 或列表，可填写原版物品 ID、自定义物品 ID 或 `#标签`（原版或自定义物品标签）。`amount` 和 `percent` 的计算方式、数字格式与 `anvil_repair_item` 相同，默认均为 `0`。上例第二条规则中，每个材料恢复 `20 + 最大耐久的 25%`。
+
+优先使用最后一条匹配的 `anvil_repair_material` 规则；没有匹配时，才检查材料上的 `anvil_repair_item`。两侧都不匹配时，继续原有铁砧处理流程，因此这些规则不会禁用其他修复方式。被修复物品的 `repairable.anvil_repair` 为 `false` 时，仍会阻止铁砧材料修复。
+
+### drag_repair_item（拖拽修复）
+
+配置在**修复材料**的物品设置中，指定此材料可以通过拖拽修复哪些物品。用光标拿起此物品并放到背包中受损的物品上即可修复。左键会尽可能修复（按需消耗多个材料），右键一次只消耗一个材料。若目标物品已修满或两侧都没有匹配的修复规则，则保持原版的物品交换行为。`target` 支持的 ID 和标签格式与 `anvil_repair_item` 相同，但 `drag_repair_item` 列表有多条匹配时，使用第一条。
+
+```yaml
+drag_repair_item:
+  - target: "#topaz_tools" # 使用标签
+    amount: 20  # 指定恢复耐久度
+  - target:
+      - "minecraft:iron_pickaxe"
+      - "minecraft:shears"
+    percent: 0.25  # 0.25 = 25%, 恢复 n% 总耐久度
+    sound: minecraft:item.armor.equip_iron # 可选；也可使用下面的完整格式
+#   sound:
+#     id: minecraft:item.armor.equip_iron
+#     volume: 1
+#     pitch: 0.9~1
+```
+
+`amount` 与 `percent` 默认均为 `0`，可同时使用：每个材料恢复 `amount + percent × 最大耐久` 点耐久度，结果向下取整。两个字段都支持[数字格式](../../reference/number_format.mdx)。
+
+### drag_repair_material（拖拽反向修复）
+
+配置在**被修复物品**的物品设置中，指定哪些材料可以通过拖拽修复此物品。光标上的材料可以是原版物品，也可以是自定义物品。
+
+```yaml
+drag_repair_material:
+  - material: "minecraft:diamond"
+    amount: 100
+  - material:
+      - "example:topaz"
+      - "#example:repair_materials"
+    amount: 20
+    percent: 0.25
+    sound:
+      id: minecraft:item.armor.equip_iron
+      volume: 1
+      pitch: 0.9~1
+```
+
+`material`、`amount` 和 `percent` 的格式与 `anvil_repair_material` 相同。`sound` 为可选项，与 `drag_repair_item` 一样，支持声音 ID 或上例中的完整格式。
+
+优先使用最后一条匹配的 `drag_repair_material` 规则；没有匹配时，才检查光标材料上的 `drag_repair_item`，并使用其中第一条匹配规则。左键按需消耗多个材料，右键只消耗一个。两侧都不匹配、目标没有耐久度或已经修满时，保持原版的物品交换行为。`repairable` 控制工作台、铁砧和砂轮修复，不控制拖拽修复。
+
+### renameable（可重命名）
+
+控制物品是否可以在铁砧中重命名。（默认值: true）
+
+```yaml
+renameable: false
+```
+
+### prevent_break（防止损毁）
+
+控制物品耐久耗尽时是否阻止其损毁。（默认值: false）
+
+物品会保留最后 1 点耐久而不会被销毁。处于这种“损坏”状态的物品将无法使用：攻击、挖掘、弓弩射击以及右键使用（如斧削皮、锄地、举盾）都会被阻止，直到修复为止。已装备的护甲损坏时会自动卸下：优先放入玩家背包，背包已满则掉落在地上。
+
+```yaml
+prevent_break: true
+```
+
+### can_place（可放置）
+
+决定该物品材质对应的原版方块能否被放置。当你用方块类材质（如 `note_block`）作为非方块物品的基底时，将其设为 `false` 可防止玩家把它放置成方块。（默认值: false）
+
+```yaml
+can_place: false
+```
+
+### allowed_projectiles (可装载的弹射物)
+
+决定了什么弹药可以装在弩和弓上
+
+```yaml
+allowed_projectiles:
+  - gun_world:gun_ammo
+  - minecraft:ender_pearl
+```
+
+### projectile（弹射物）
+
+基于该物品创建一个自定义弹射物实体。支持 `trident`、`arrow`、`snowball` 等类型。
+
+```yaml
+projectile:
+  display:
+    item: default:topaz_trident # 显示的物品
+    translation: 0,0,0
+    rotation: 1,1,1,1
+    display_transform: NONE
+    scale: 0.5
+  sounds:
+    throw: minecraft:item.trident.throw
+    hit_entity: minecraft:item.trident.hit
+    hit_block: minecraft:item.trident.hit_ground
+  # 作为弹药时是否忽略无限附魔
+  ignore_infinity_enchantment: false
+  # 射出命中后是否可以被捡起来
+  pickupable: true
+  # 是否在命中后移除
+  remove_on_hit: false
+  # 弹射物是否受重力影响
+  gravity: true
+  # 弹射物速度
+  velocity: 1
+  # 基础伤害
+  damage: 10
+  # 穿透等级（即可以穿透几个实体）
+  pierce_level: 5
+```
+
+:::tip
+任何音效配置均支持高级配置格式
+
+```yaml
+sounds:
+  throw:
+    id: minecraft:item.trident.throw
+    pitch: 0.9~1
+    volume: 1
+```
+
+`hit_block` 和 `hit_entity` 支持根据命中目标改变音效类型
+
+```yaml
+sounds:
+  hit_block:
+    default: minecraft:item.trident.hit
+    overrides:
+      minecraft:stone: minecraft:item.trident.hit_stone
+      default:palm_log: minecraft:item.trident.hit_log
+```
+
+:::
+
+![](/img/item_settings_4.png)
+
+<Details summary="如何建模">
+  你的建模方式将直接影响配置文件中的 `rotation` 参数。
+
+  无论你使用哪种建模方法，最关键的是将三叉戟的尖端指向在上图所示的位置，以确保最佳的命中点。
+
+![](/img/i18n/zh-Hans/item_settings_6.png)
+![](/img/i18n/zh-Hans/item_settings_7.png)
+
+</Details>
+
+### dyeable（可染色）
+
+控制物品是否可以在工作台中染色。（默认值：未定义）
+
+```yaml
+dyeable: true
+```
+
+![](/img/i18n/zh-Hans/item_settings_5.png)
+
+### food（可食用）
+
+基于插件的 food 组件替代实现方案。
+
+```yaml
+food:
+  nutrition: 5  # 0~20, 整数
+  saturation: 3.5  # 0~10, 单精度浮点数
+```
+
+:::caution
+建议在 1.20.5 及以上版本的服务器上使用 food 组件
+:::
+
+### consume_replacement（消耗替代品）
+
+控制物品消耗后返回的物品。例如，玩家喝完水瓶后，会返回空瓶。（默认值：null）
+
+```yaml
+consume_replacement: minecraft:apple
+```
+
+### craft_remainder / craft_remaining_item（合成剩余物品）
+
+控制在合成配方完成后，物品是否应返还其他物品，或是对参与合成的物品进行一些特殊操作。
+
+返回一个固定物品
+
+```yaml
+craft_remainder: bucket
+```
+
+```yaml
+craft_remainder:
+  type: fixed
+  item: bucket
+  count: 1
+```
+
+消耗一定耐久度
+
+```yaml
+craft_remainder:
+  type: hurt_and_break
+  damage: 1 # 默认1
+```
+
+根据配方选择合成剩余物品
+
+```yaml
+craft_remainder:
+  type: recipe_based
+  terms:
+    - recipes: 
+        - test:test1
+        - test:test3
+      craft_remainder:
+        type: hurt_and_break
+    - recipes: 
+        - test:test2
+      craft_remainder: minecraft:stone
+```
+
+![](/img/i18n/zh-Hans/item_settings_8.png)
+
+### fuel_remainder（燃料剩余物品）
+
+作为燃料消耗后会返还的物品，仅适用于堆叠数量为1的物品。
+
+```yaml
+fuel_remainder: paper
+```
+
+### invulnerable（不被指定伤害类型摧毁）
+
+与 `damage_resistant` 数据组件不同，此设置通过取消对应伤害事件实现。
+
+```yaml
+invulnerable:
+  - lava
+  - fire
+  - fire_tick
+  - block_explosion  # 例如重生锚
+  - entity_explosion  # 例如苦力怕，TNT
+  - lightning
+  - contact  # 例如仙人掌
+```
+
+![](/img/item_settings_9.png)
+
+### enchantable（可附魔）
+
+控制物品能否在附魔台上附魔（默认值：`true`）。此项不会让原本不可附魔的物品自动获得附魔能力；这类物品还需要配置 `enchantable` 数据组件和对应的物品标签。
+
+```yaml
+enchantable: false
+```
+
+### compost_probability（堆肥成功率）
+
+控制物品堆肥成功的几率（默认值：0.5）。
+
+```yaml
+compost_probability: 0.5
+```
+
+### respect_repairable_component（尊重 repairable 组件）
+
+控制物品在铁砧界面中是否允许被 `repairable` 组件中指定的物品修复。自定义物品的默认值为 `false`，原版物品的默认值为 `true`。
+
+```yaml
+respect_repairable_component: false
+```
+
+### dye_color（染色颜色）
+
+控制物品在染色配方中提供的颜色。
+
+```yaml
+dye_color: 255,140,0
+```
+
+![](/img/item_settings_10.png)
+
+### firework_color（烟火颜色）
+
+控制物品在烟火之星配方中提供的颜色。
+
+```yaml
+firework_color: 255,140,0
+```
+
+### ingredient_substitute（原料替代物）
+
+控制物品在合成配方中提供的替代物。
+
+```yaml
+ingredient_substitute:
+  - minecraft:leather
+  - minecraft:paper
+```
+
+![](/img/item_settings_11.png)
+
+### hat_height（帽子高度，需要 CustomNameplates）
+
+决定了这个帽子物品对玩家铭牌高度的影响
+
+```yaml
+hat_height: 1.5
+```
+
+### keep_on_death_chance（死亡保留概率）
+
+决定了死亡后保留此物品的概率
+
+```yaml
+keep_on_death_chance: 0.2 # 0~1
+```
+
+### destroy_on_death_chance（死亡损毁概率）
+
+决定了死亡后损毁此物品的概率
+
+```yaml
+destroy_on_death_chance: 0.5 # 0~1
+```
+
+### drop_display（物品实体显示名称）
+
+用于控制物品实体是否显示名称，以及显示的内容
+
+```yaml
+drop_display: false  # 如果全局开启，可以单独关闭
+```
+
+```yaml
+drop_display: true  # 根据物品名显示实体名
+```
+
+```yaml
+# 自定义显示名称 <arg:count> 为数量，<name> 为物品名
+drop_display: "<arg:count>x <name>"
+```
+
+![](/img/i18n/zh-Hans/item_settings_12.png)
+
+### glow_color（发光颜色）
+
+使物品发光并显示颜色
+
+```yaml
+# black, dark_blue, dark_green, dark_aqua, dark_red, dark_purple, gold, gray, dark_gray, blue, green, aqua, red, light_purple, yellow, white
+glow_color: white
+```
+
+![](/img/item_settings_13.png)
