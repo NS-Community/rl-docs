@@ -4,6 +4,8 @@ North 服务条款与隐私政策站点，部署于 `https://rl.nsbbs.eu.cc/`，
 
 站点基于 Docusaurus 3，只发布这一页内容：首页在 `docs/intro.mdx`（`slug: /`），中文语言入口在 `i18n/zh-Hans/docusaurus-plugin-content-docs/current/intro.mdx`；两份内容保持一致，修改条款时请同步更新。原 wiki 的其余文档与页面已移除，侧栏（`sidebars/en.ts`、`sidebars/zh-hans.ts`）只保留《服务条款与隐私政策》一条入口。
 
+由于全站只有这一页，任何无法匹配的旧链接或错误路径都会自动跳回本页：开发模式由 `src/theme/NotFound` 覆盖组件处理，构建产物则通过 `scripts/fix-404.mjs` 在 `404.html` 中写入重定向（含 `meta refresh` 兜底，无需 JS 也能跳转）。
+
 ## 本地开发
 
 ```bash

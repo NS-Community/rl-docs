@@ -9,7 +9,7 @@
     "prestart-zhcn": "node scripts/subset-font.mjs",
     "start-zhcn": "docusaurus start --locale zh-Hans",
     "prebuild": "node scripts/subset-font.mjs",
-    "build": "docusaurus build",
+    "build": "docusaurus build && node scripts/fix-404.mjs",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
