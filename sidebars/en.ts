@@ -1,13 +1,28 @@
 import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 
 // rl.nsbbs.eu.cc publishes a single page: docs/intro.mdx (slug: /).
-// The former wiki pages have been removed, so the sidebar has one entry only.
+// Navigation hierarchy: Gamesense (top category) › skintro (sub-category) › 条款.
+// Former wiki pages were removed, so the sub-category holds only this one doc.
 const sidebars: SidebarsConfig = {
   tutorialSidebar: [
     {
-      type: 'doc',
-      id: 'intro',
-      label: '服务条款与隐私政策',
+      type: 'category',
+      label: 'Gamesense',
+      collapsed: false,
+      items: [
+        {
+          type: 'category',
+          label: 'skintro',
+          collapsed: false,
+          items: [
+            {
+              type: 'doc',
+              id: 'intro',
+              label: '服务条款与隐私政策',
+            },
+          ],
+        },
+      ],
     },
   ],
 };

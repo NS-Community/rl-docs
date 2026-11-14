@@ -69,7 +69,7 @@ const config: Config = {
       'classic',
       {
         docs: {
-          sidebarPath: require.resolve('./sidebars.js'),
+          sidebarPath: require.resolve('./sidebars.ts'),
           routeBasePath: '/',
           // No editUrl: this is a terms site, not a community-editable wiki.
           // Last-update metadata requires a Git worktree and hard-fails the
