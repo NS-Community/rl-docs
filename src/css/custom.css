@@ -1161,35 +1161,57 @@ html[data-eyecare='mist']:not([data-theme='dark']) pre[class*='language-'] {
    Tree connector lines for the nested doc sidebar.
    The site publishes a tiny tree (Gamesense › skintro › 条款). Docusaurus
    only draws a faint left rail by default, so the hierarchy reads as "stuck".
-   Add explicit connectors: a 2px vertical rail on every nested list plus a
-   horizontal elbow on each child item, so parent → child reads at a glance.
-   Plain nested-list selectors are used — no JS-injected classes required.
-   The active path still wins with its blue rail (higher-specificity rules).
+
+   IMPORTANT: the rail must NOT be a full-height list border — that stretches
+   to the bottom of the whole sub-tree and leaves a dangling "cut branch"
+   below the last node. Instead each child draws its OWN short vertical
+   segment that stops exactly at the elbow, giving a clean └ terminus.
+   (This single-page site has exactly one child per nested level.)
    ========================================================================= */
 .theme-doc-sidebar-container .menu__list .menu__list {
   position: relative;
-  /* left room for the vertical rail + the elbow that reaches back to it */
+  /* left room for the rail + the elbow that reaches back to it */
   margin: 4px 0 4px 0.7rem;
   padding: 2px 4px 2px 1.1rem;
-  border-left: 2px solid var(--ifm-color-emphasis-500);
+  border-left: none;           /* kill the theme's full-height dangling rail */
   border-radius: 0;
-  transition: border-left-color 0.18s ease !important;
+  --tree-rail: var(--ifm-color-emphasis-500);
+  transition: none;
   will-change: auto !important;
 }
-.theme-doc-sidebar-container .menu__list .menu__list:hover {
-  border-left-color: var(--ifm-color-emphasis-600);
+
+/* The list that directly holds the current page gets a blue rail; ancestors
+   stay grey. :has() is the reliable signal (the page link carries
+   aria-current="page"); .osb-active-folder is kept as a JS-side fallback. */
+.theme-doc-sidebar-container .menu__list .menu__list:has(> .menu__list-item > a[aria-current="page"]),
+.theme-doc-sidebar-container .menu__list.osb-active-folder {
+  --tree-rail: rgba(var(--ifm-color-primary-rgb), 0.8);
 }
 
-/* Each direct child item gets a horizontal elbow joining it to the rail. */
 .theme-doc-sidebar-container .menu__list .menu__list > .menu__list-item {
   position: relative;
 }
+
+/* Short vertical segment: from the top of this row down to its elbow ONLY.
+   Because it is scoped to the item (not the list), it never dangles below
+   the last node even when the item itself contains a nested sub-list. */
 .theme-doc-sidebar-container .menu__list .menu__list > .menu__list-item::before {
   content: "";
   position: absolute;
   left: -1.1rem;               /* back to the rail (the list's padding-left) */
+  top: 0;
+  width: 2px;
+  height: 1.05rem;             /* stop exactly at the elbow → └ */
+  background: var(--tree-rail);
+}
+
+/* Horizontal elbow joining this item to the rail. */
+.theme-doc-sidebar-container .menu__list .menu__list > .menu__list-item::after {
+  content: "";
+  position: absolute;
+  left: -1.1rem;
   top: 1.05rem;               /* vertically centered on the label line */
   width: 0.7rem;
   height: 2px;
-  background: var(--ifm-color-emphasis-500);
+  background: var(--tree-rail);
 }
