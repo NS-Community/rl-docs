@@ -2,7 +2,7 @@
 
 North 服务条款与隐私政策站点，部署于 `https://rl.nsbbs.eu.cc/`，由论坛页脚的「服务条款 / 隐私政策」链接进入。
 
-站点基于 Docusaurus 3。首页内容在 `docs/intro.mdx`（`slug: /`），中文语言入口在 `i18n/zh-Hans/docusaurus-plugin-content-docs/current/intro.mdx`；两份内容保持一致，修改条款时请同步更新。
+站点基于 Docusaurus 3，只发布这一页内容：首页在 `docs/intro.mdx`（`slug: /`），中文语言入口在 `i18n/zh-Hans/docusaurus-plugin-content-docs/current/intro.mdx`；两份内容保持一致，修改条款时请同步更新。原 wiki 的其余文档与页面已移除，侧栏（`sidebars/en.ts`、`sidebars/zh-hans.ts`）只保留《服务条款与隐私政策》一条入口。
 
 ## 本地开发
 
