@@ -1156,3 +1156,40 @@ html[data-eyecare='mist']:not([data-theme='dark']) pre[class*='language-'] {
 .bg-swatch--none .theme-color-check {
   color: var(--ifm-color-emphasis-700);
 }
+
+/* =========================================================================
+   Tree connector lines for the nested doc sidebar.
+   The site publishes a tiny tree (Gamesense › skintro › 条款). Docusaurus
+   only draws a faint left rail by default, so the hierarchy reads as "stuck".
+   Add explicit connectors: a 2px vertical rail on every nested list plus a
+   horizontal elbow on each child item, so parent → child reads at a glance.
+   Plain nested-list selectors are used — no JS-injected classes required.
+   The active path still wins with its blue rail (higher-specificity rules).
+   ========================================================================= */
+.theme-doc-sidebar-container .menu__list .menu__list {
+  position: relative;
+  /* left room for the vertical rail + the elbow that reaches back to it */
+  margin: 4px 0 4px 0.7rem;
+  padding: 2px 4px 2px 1.1rem;
+  border-left: 2px solid var(--ifm-color-emphasis-500);
+  border-radius: 0;
+  transition: border-left-color 0.18s ease !important;
+  will-change: auto !important;
+}
+.theme-doc-sidebar-container .menu__list .menu__list:hover {
+  border-left-color: var(--ifm-color-emphasis-600);
+}
+
+/* Each direct child item gets a horizontal elbow joining it to the rail. */
+.theme-doc-sidebar-container .menu__list .menu__list > .menu__list-item {
+  position: relative;
+}
+.theme-doc-sidebar-container .menu__list .menu__list > .menu__list-item::before {
+  content: "";
+  position: absolute;
+  left: -1.1rem;               /* back to the rail (the list's padding-left) */
+  top: 1.05rem;               /* vertically centered on the label line */
+  width: 0.7rem;
+  height: 2px;
+  background: var(--ifm-color-emphasis-500);
+}
